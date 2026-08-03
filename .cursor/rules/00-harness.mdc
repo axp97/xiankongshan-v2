@@ -1,0 +1,16 @@
+---
+description: 陷空山 V2 · 强制冷启动（任何新窗口先读 AGENTS.md）
+alwaysApply: true
+---
+
+# 冷启动（强制）
+
+本仓库的 Agent 入口是根目录 `AGENTS.md`。**任何新对话、任何模型，先读并执行其「冷启动协议」**，再动手。
+
+- 待办唯一事实源：`harness/plan.md`（不要自造任务）
+- 当前状态 / NEXT：`harness/memory.md`
+- 工程规则：`harness/rules.md`
+- 已裁决问题：`docs/adr/`（禁止重开）
+- 完成定义：`npm run verify` 全绿 + 勾选 plan + 刷新 memory
+
+本文件不承载规则正文；规则只在 `harness/` 与 `AGENTS.md`。

@@ -1,0 +1,40 @@
+{
+  "_comment": "模板文件，已入库。复制为 project.config.json（已 gitignore，勿提交）后把 appid 改成你的小程序 AppID；AppID 在微信公众平台 -> 开发 -> 开发管理可见。",
+  "miniprogramRoot": "dist/weapp/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "projectname": "xiankongshan-v2",
+  "description": "陷空山 V2 · 匿名情绪陪伴",
+  "appid": "touristappid",
+  "setting": {
+    "urlCheck": true,
+    "es6": false,
+    "enhance": false,
+    "postcss": false,
+    "minified": false,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
+}

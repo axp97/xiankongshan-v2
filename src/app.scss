@@ -1,0 +1,39 @@
+@use './shared/theme.scss';
+
+page,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--canvas);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+view,
+text,
+textarea,
+button {
+  box-sizing: border-box;
+}
+
+/* monoline 图标基座（shared/ui/Icon.tsx）：mask 取形，背景色取色 */
+.xk-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+/* 微信小程序 WXSS 不支持通配符 *，用显式标签列表代替 */
+@media (prefers-reduced-motion: reduce) {
+  view,
+  text,
+  textarea,
+  button {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

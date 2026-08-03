@@ -1,0 +1,26 @@
+# deps / build
+node_modules/
+dist/
+.temp/
+.swc/
+.home/
+*.log
+
+# 本地环境（含云环境 ID 等，勿入库；模板见 .env.example）
+.env
+.env.local
+.env.*.local
+
+# os / editor
+.DS_Store
+.history/
+
+# 微信开发者工具配置（含 AppID，属账号标识，勿入库；模板见 project.config.example.json）
+project.config.json
+project.private.config.json
+
+# 设计工具目录（1.8G，含独立 .git，非产品代码）
+open-design/
+
+# 旧项目参考（含独立 .git，仅本地参考；设计契约在 reference/陷空山UX设计 保留）
+reference/xiankongshan/

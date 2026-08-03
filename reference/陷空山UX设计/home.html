@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>陷空山 · 首页</title>
+<style>
+  :root{
+    --bg:#F7FAF6; --surface:#FFFFFF; --soft:#EEF5EE;
+    --ink:#17231D; --muted:#66756A; --sage:#6FA37A; --deep:#2F6B4F;
+    --notice:#B9894B; --danger:#B85C5C;
+    --line:#E2EAE2; --line-soft:#EDF2ED; --ink-2:#3C4A41;
+    --sage-wash:rgba(111,163,122,.10); --sage-wash-2:rgba(111,163,122,.16);
+    --deep-press:#27593F;
+    --shadow-soft:0 1px 2px rgba(23,35,29,.04), 0 10px 30px rgba(23,35,29,.06);
+    --shadow-input:0 2px 4px rgba(23,35,29,.03), 0 16px 40px rgba(23,35,29,.07);
+    --r-card:8px; --r-field:16px; --r-pill:999px;
+    --tap:48px;
+    --ease:cubic-bezier(.2,.7,.2,1);
+    --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+
+    /* —— 时段驱动语义 token 层（与 chat.html 同源，JS autoTod 改这层）——
+       默认 = 白天态。深夜态由 JS 覆盖到 .phone 上。
+       组件全部引用语义 token，不直接引用 --bg/--surface 等。
+       隐私 sheet / 清除确认弹层刻意保持白底反差，不接语义 token。 */
+    --canvas:var(--bg);
+    --field-bg:var(--surface);
+    --field-line:var(--line);
+    --title-ink:var(--ink);
+    --sub-ink:var(--muted);
+    --field-ink:var(--ink);
+    --placeholder:#A6B2A9;
+    --chip-bg:var(--surface);
+    --chip-line:var(--line);
+    --chip-ink:var(--ink-2);
+    --chip-hover:var(--soft);
+    --anon-bg:var(--sage-wash);
+    --anon-ink:var(--muted);
+    --send-bg:var(--deep);
+    --send-bg-press:var(--deep-press);
+    --send-disabled:#C3D2C6;
+    --foot-ink:var(--muted);
+    --statusbar-ink:var(--ink);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--font);color:var(--ink);background:#0d100e;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:28px 20px;
+  }
+
+  /* 手机帧（仅评审用，真实小程序为全屏） */
+  .phone{
+    width:390px;height:844px;background:var(--canvas);border-radius:46px;position:relative;overflow:hidden;
+    box-shadow:0 0 0 11px #1c211e,0 0 0 13px #2a302c,0 40px 90px rgba(0,0,0,.5);
+    display:flex;flex-direction:column;
+    transition:background .3s var(--ease);
+  }
+
+  /* 微信小程序语义：状态栏 + 自定义导航 + 右上角胶囊 */
+  .statusbar{
+    flex:0 0 auto;height:48px;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 26px 5px;font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--statusbar-ink);
+    transition:color .3s var(--ease);
+  }
+  .statusbar svg{color:var(--statusbar-ink);transition:color .3s var(--ease)}
+  .statusbar .sb-right{display:flex;align-items:center;gap:6px}
+  .wx-nav{
+    flex:0 0 auto;height:44px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 14px 0 20px;position:relative;
+  }
+  .wx-nav .wx-title{font-size:16px;font-weight:600;letter-spacing:.08em;color:var(--title-ink);transition:color .3s var(--ease)}
+  .wx-capsule{
+    display:flex;align-items:center;height:32px;width:87px;border:1px solid var(--field-line);
+    border-radius:var(--r-pill);background:rgba(255,255,255,.6);backdrop-filter:blur(8px);
+  }
+  .wx-capsule .cc{flex:1;display:grid;place-items:center;color:var(--chip-ink)}
+  .wx-capsule .cd{width:1px;height:17px;background:var(--field-line)}
+
+  /* 时段切换器（设计演示用，长按 wx-title 1.5s 弹出，3s 自动隐藏）
+     刻意保持白底反差，不接时段 token——与隐私 sheet 同一原则 */
+  .tod-switcher{
+    position:absolute;top:48px;left:50%;transform:translateX(-50%);
+    display:none;gap:2px;padding:5px;background:#FFFFFF;
+    border:1px solid #E2EAE2;border-radius:var(--r-pill);
+    box-shadow:0 4px 16px rgba(23,35,29,.12);z-index:90;
+  }
+  .tod-switcher.show{display:flex}
+  .tod-switcher button{
+    appearance:none;border:0;background:transparent;color:#66756A;
+    font-family:inherit;font-size:12px;padding:6px 11px;border-radius:var(--r-pill);
+    cursor:pointer;letter-spacing:.02em;transition:background .15s,color .15s;
+  }
+  .tod-switcher button:hover{background:#EEF5EE}
+  .tod-switcher button.active{background:rgba(111,163,122,.16);color:#2F6B4F}
+
+  /* 主体 */
+  .home{flex:1 1 auto;display:flex;flex-direction:column;padding:0 22px;overflow-y:auto}
+  .home::-webkit-scrollbar{width:0}
+
+  /* 第一拍：被接住的问候 */
+  .greet{padding:30px 2px 22px}
+  .greet .anon{
+    display:inline-flex;align-items:center;gap:7px;font-size:12px;letter-spacing:.04em;color:var(--anon-ink);
+    background:var(--anon-bg);padding:6px 11px;border-radius:var(--r-pill);margin-bottom:20px;
+    transition:color .3s var(--ease),background .3s var(--ease);
+  }
+  .greet .anon .ad{width:5px;height:5px;border-radius:50%;background:var(--sage)}
+  .greet h1{
+    font-size:25px;line-height:1.5;font-weight:600;letter-spacing:.01em;color:var(--title-ink);
+    transition:color .3s var(--ease);
+  }
+  .greet .sub{font-size:14.5px;line-height:1.65;color:var(--sub-ink);margin-top:10px;max-width:26ch;transition:color .3s var(--ease)}
+
+  /* 可倾诉的安静面：不是表单框 */
+  .speak{
+    margin-top:8px;background:var(--field-bg);border:1px solid var(--field-line);border-radius:var(--r-field);
+    box-shadow:var(--shadow-input);padding:18px 18px 14px;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease),background .3s var(--ease);
+    display:flex;flex-direction:column;
+  }
+  .speak.focused{border-color:var(--sage);box-shadow:0 0 0 4px var(--sage-wash),var(--shadow-input)}
+  .speak textarea{
+    border:0;outline:0;resize:none;background:transparent;font-family:inherit;color:var(--field-ink);
+    font-size:17px;line-height:1.62;min-height:96px;max-height:200px;width:100%;
+    transition:color .3s var(--ease);
+  }
+  .speak textarea::placeholder{color:var(--placeholder)}
+  .speak .speak-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:12px}
+  .speak .count{font-size:12px;color:var(--placeholder);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+  .speak .send{
+    flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;height:var(--tap);padding:0 22px;border:0;
+    border-radius:var(--r-pill);background:var(--send-bg);color:#fff;font-family:inherit;font-size:15.5px;font-weight:600;
+    cursor:pointer;transition:background .18s var(--ease),transform .12s var(--ease),opacity .2s,box-shadow .2s;
+    box-shadow:0 6px 18px rgba(47,107,79,.22);
+  }
+  .speak .send:disabled{background:var(--send-disabled);box-shadow:none;cursor:default}
+  .speak .send:not(:disabled):active{transform:translateY(1px)}
+
+  /* 起头词：杀掉空页焦虑 */
+  .starters{margin-top:22px}
+  .starters .st-label{font-size:12.5px;color:var(--sub-ink);letter-spacing:.02em;margin-bottom:12px;padding-left:2px;transition:color .3s var(--ease)}
+  .starters .st-grid{display:flex;flex-wrap:wrap;gap:9px}
+  .starter{
+    appearance:none;border:1px solid var(--chip-line);background:var(--chip-bg);color:var(--chip-ink);
+    border-radius:var(--r-pill);padding:11px 16px;font-family:inherit;font-size:14px;letter-spacing:.01em;
+    cursor:pointer;display:inline-flex;align-items:center;gap:8px;min-height:44px;
+    transition:background .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease),transform .12s var(--ease);
+  }
+  .starter:hover{background:var(--chip-hover);border-color:var(--sage)}
+  .starter:active{transform:scale(.97)}
+  .starter:focus-visible{outline:2px solid var(--deep);outline-offset:2px}
+  .starter .si{color:var(--sage);flex:0 0 auto}
+
+  /* 底部：树洞 + 隐私（降级，不抢主路径） */
+  .home-foot{margin-top:auto;padding:22px 2px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+  .treehole-hint{
+    display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--foot-ink);letter-spacing:.01em;
+    padding:13px 15px;background:var(--chip-bg);border-radius:var(--r-card);
+    transition:color .3s var(--ease),background .3s var(--ease);
+  }
+  .treehole-hint .ti{color:var(--sage);flex:0 0 auto}
+  .privacy-row{display:flex;align-items:center;justify-content:center}
+  .privacy-entry{
+    display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--foot-ink);
+    background:transparent;border:0;font-family:inherit;cursor:pointer;padding:8px 12px;border-radius:var(--r-pill);
+    transition:color .18s,background .18s;
+  }
+  .privacy-entry:hover{color:var(--deep);background:var(--sage-wash)}
+  .privacy-entry:focus-visible{outline:2px solid var(--deep);outline-offset:2px}
+
+  /* 隐私 sheet —— 刻意保持白底反差，不接时段 token（与 chat.html 一致） */
+  .scrim{position:absolute;inset:0;background:rgba(13,16,14,.34);opacity:0;pointer-events:none;transition:opacity .26s var(--ease);z-index:70}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:20px 20px 0 0;
+    padding:8px 22px calc(22px + env(safe-area-inset-bottom));transform:translateY(102%);
+    transition:transform .3s var(--ease);z-index:80;box-shadow:0 -8px 40px rgba(13,16,14,.16);max-height:84%;overflow-y:auto;
+  }
+  .sheet.show{transform:translateY(0)}
+  .sheet .grab{width:38px;height:4px;border-radius:4px;background:var(--line);margin:8px auto 16px}
+  .sheet h2{font-size:18px;font-weight:600;letter-spacing:.02em;margin-bottom:4px;color:var(--ink)}
+  .sheet .sh-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px}
+  .trust-item{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line-soft);align-items:flex-start}
+  .trust-item:last-of-type{border-bottom:0}
+  .trust-item .tic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--soft);display:grid;place-items:center;color:var(--deep);margin-top:1px}
+  .trust-item .tt{font-size:14.5px;font-weight:600;margin-bottom:3px;color:var(--ink)}
+  .trust-item .td{font-size:13px;color:var(--muted);line-height:1.6}
+  .sheet .sh-done{width:100%;min-height:var(--tap);margin-top:18px;border:0;border-radius:var(--r-card);background:var(--deep);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer}
+  .sheet .sh-done:active{background:var(--deep-press)}
+
+  @media (max-width:720px){
+    body{padding:0;background:var(--canvas)}
+    .phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="sb-right">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect y="7" width="3" height="4" rx="1" fill="currentColor"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="currentColor"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="currentColor"/><rect x="13.5" width="3" height="11" rx="1" fill="currentColor"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.6" y="2.6" width="16" height="6.8" rx="1.6" fill="currentColor"/><rect x="23" y="4" width="1.6" height="4" rx="1" fill="currentColor" fill-opacity=".4"/></svg>
+      </span>
+    </div>
+
+    <div class="wx-nav">
+      <span class="wx-title">陷空山</span>
+      <span class="wx-capsule" aria-hidden="true">
+        <span class="cc"><svg width="18" height="5" viewBox="0 0 18 5" fill="none"><circle cx="2.5" cy="2.5" r="1.6" fill="currentColor"/><circle cx="9" cy="2.5" r="1.6" fill="currentColor"/><circle cx="15.5" cy="2.5" r="1.6" fill="currentColor"/></svg></span>
+        <span class="cd"></span>
+        <span class="cc"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.3"/></svg></span>
+      </span>
+    </div>
+
+    <!-- 时段切换器（设计演示用，长按标题 1.5s 弹出） -->
+    <div class="tod-switcher" id="tod-switcher" role="dialog" aria-label="时段切换（设计演示用）">
+      <button type="button" data-tod="auto">跟随</button>
+      <button type="button" data-tod="morning">清晨</button>
+      <button type="button" data-tod="day">白天</button>
+      <button type="button" data-tod="evening">傍晚</button>
+      <button type="button" data-tod="night">深夜</button>
+    </div>
+
+    <main class="home">
+      <section class="greet">
+        <span class="anon"><span class="ad"></span>匿名 · 这里只你一个人</span>
+        <h1>慢慢说，我在这里。</h1>
+        <p class="sub">先把这一句放下来。不必完整，不必体面。</p>
+      </section>
+
+      <div class="speak" id="speak">
+        <label for="say" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">写下现在最想说的话</label>
+        <textarea id="say" rows="1" placeholder="写下一句现在最想说的话…" enterkeyhint="send"></textarea>
+        <div class="speak-foot">
+          <span class="count" id="count" aria-hidden="true">0</span>
+          <button class="send" id="send" disabled>
+            放下这一句
+            <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2.5 8.5 14.5 3l-3.6 12-2.8-5.2L2.5 8.5Z" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <section class="starters">
+        <p class="st-label">不知从哪说起？从这里起个头：</p>
+        <div class="st-grid" id="starters">
+          <button class="starter" data-seed="今天有点累，说不上为什么。"><span class="si"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5v2M7.5 11.5v2M1.5 7.5h2M11.5 7.5h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="7.5" r="2.4" stroke="currentColor" stroke-width="1.3"/></svg></span>今天有点累</button>
+          <button class="starter" data-seed="又到深夜了，还是睡不着。"><span class="si"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M11.5 8.4A4.5 4.5 0 1 1 6.6 3.5a3.6 3.6 0 0 0 4.9 4.9Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span>睡不着</button>
+          <button class="starter" data-seed="今天发生了一件让我很委屈的事。"><span class="si"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5.6" stroke="currentColor" stroke-width="1.3"/><path d="M5.2 9.2a3 3 0 0 1 4.6 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5.3 5.8h.01M9.7 5.8h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>有点委屈</button>
+          <button class="starter" data-seed="我也不知道想说什么，就是有点闷。"><span class="si"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 4.5h10M2.5 7.5h7M2.5 10.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>不想说话</button>
+        </div>
+      </section>
+
+      <div class="home-foot">
+        <div class="treehole-hint">
+          <span class="ti"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2C5.5 2 3.5 3.9 3.5 6.4c0 1.6.8 2.9 2.1 3.7.3.2.4.4.4.7v.6c0 .4.3.8.8.8h2.4c.5 0 .8-.4.8-.8v-.6c0-.3.1-.5.4-.7 1.3-.8 2.1-2.1 2.1-3.7C12.5 3.9 10.5 2 8 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8" cy="6.6" r="1.5" stroke="currentColor" stroke-width="1.1"/></svg></span>
+          以后也可以把心事放进树洞，不急着看。
+        </div>
+        <div class="privacy-row">
+          <button class="privacy-entry" id="open-privacy">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1 2 2.8v3.3c0 2.8 1.9 4.6 4.5 5.6 2.6-1 4.5-2.8 4.5-5.6V2.8L6.5 1Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M4.8 6.4 6 7.6l2.3-2.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            隐私与边界
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="隐私与边界">
+      <div class="grab"></div>
+      <h2>隐私与边界</h2>
+      <p class="sh-sub">我们只说现在能做到的，不夸大。</p>
+      <div class="trust-item"><span class="tic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="5.5" r="3" stroke="#2F6B4F" stroke-width="1.3"/><path d="M3 14c0-2.8 2.5-4.5 5.5-4.5S14 11.2 14 14" stroke="#2F6B4F" stroke-width="1.3" stroke-linecap="round"/></svg></span><div><p class="tt">匿名使用</p><p class="td">不需要注册、不绑定身份，也不要求你说出「你是谁」。</p></div></div>
+      <div class="trust-item"><span class="tic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="3" y="7" width="11" height="7.5" rx="1.6" stroke="#2F6B4F" stroke-width="1.3"/><path d="M5.5 7V5a3 3 0 0 1 6 0v2" stroke="#2F6B4F" stroke-width="1.3" stroke-linecap="round"/></svg></span><div><p class="tt">密钥只在服务端</p><p class="td">模型接口密钥保存在服务器，不写进小程序客户端。</p></div></div>
+      <div class="trust-item"><span class="tic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M8.5 2.5C5 4 3 4.3 3 4.3v4.4c0 3.3 2.4 5.3 5.5 6.3 3.1-1 5.5-3 5.5-6.3V4.3s-2-.3-5.5-1.8Z" stroke="#2F6B4F" stroke-width="1.3" stroke-linejoin="round"/></svg></span><div><p class="tt">不用于训练</p><p class="td">你的输入不会用于模型训练，也不建立用户画像。</p></div></div>
+      <div class="trust-item"><span class="tic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M3.5 5h10M6 5V3.8c0-.5.4-.8.8-.8h3.4c.4 0 .8.3.8.8V5m1 0-.6 8.2c0 .5-.4.8-.9.8H5.5c-.5 0-.9-.3-.9-.8L4 5" stroke="#2F6B4F" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><p class="tt">可随时清除本次内容</p><p class="td">你可以一键清空这次会话，从这台设备上移除。</p></div></div>
+      <div class="trust-item"><span class="tic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M8.5 2.5v12M3.5 9.5l5 5 5-5" stroke="#2F6B4F" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><p class="tt">情绪支持，不是医疗诊断</p><p class="td">这里的回应只陪你整理情绪，不替代医生或专业治疗。</p></div></div>
+      <button class="sh-done" id="close-privacy">我知道了</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var phone=document.querySelector('.phone');
+  var say=document.getElementById('say'),send=document.getElementById('send'),
+      speak=document.getElementById('speak'),count=document.getElementById('count'),
+      scrim=document.getElementById('scrim'),sheet=document.getElementById('sheet');
+
+  /* ============================================================
+     时段感知（与 chat.html 同源，四套 palette）
+     —— autoTod 按真实时间自动套用，无手动切换器（产品页非评审页）
+     —— 深夜态走 A 路线：暗 canvas #10221B + 组件层提亮拉开层次
+     —— 发送键深夜从 deep #2F6B4F 换 sage #6FA37A（deep 在暗面上对比度不足）
+     —— 隐私 sheet 保持白底反差，不接时段 token
+     ============================================================ */
+  var TOD_VARS=['--canvas','--field-bg','--field-line','--title-ink','--sub-ink',
+    '--field-ink','--placeholder','--chip-bg','--chip-line','--chip-ink','--chip-hover',
+    '--anon-bg','--anon-ink','--send-bg','--send-bg-press','--send-disabled',
+    '--foot-ink','--statusbar-ink'];
+  var TOD={
+    morning:{vars:{
+      '--canvas':'#F7FAF6','--field-bg':'#FFFFFF','--field-line':'#E2EAE2',
+      '--title-ink':'#17231D','--sub-ink':'#66756A','--field-ink':'#17231D','--placeholder':'#A6B2A9',
+      '--chip-bg':'#FFFFFF','--chip-line':'#E2EAE2','--chip-ink':'#3C4A41','--chip-hover':'#EEF5EE',
+      '--anon-bg':'rgba(111,163,122,.10)','--anon-ink':'#66756A',
+      '--send-bg':'#2F6B4F','--send-bg-press':'#27593F','--send-disabled':'#C3D2C6',
+      '--foot-ink':'#66756A','--statusbar-ink':'#17231D'
+    }},
+    day:{vars:{
+      '--canvas':'#F7FAF6','--field-bg':'#FFFFFF','--field-line':'#E2EAE2',
+      '--title-ink':'#17231D','--sub-ink':'#66756A','--field-ink':'#17231D','--placeholder':'#A6B2A9',
+      '--chip-bg':'#FFFFFF','--chip-line':'#E2EAE2','--chip-ink':'#3C4A41','--chip-hover':'#EEF5EE',
+      '--anon-bg':'rgba(111,163,122,.10)','--anon-ink':'#66756A',
+      '--send-bg':'#2F6B4F','--send-bg-press':'#27593F','--send-disabled':'#C3D2C6',
+      '--foot-ink':'#66756A','--statusbar-ink':'#17231D'
+    }},
+    evening:{vars:{
+      '--canvas':'#EEF2EC','--field-bg':'#FFFFFF','--field-line':'#DDE5DC',
+      '--title-ink':'#17231D','--sub-ink':'#5A6960','--field-ink':'#17231D','--placeholder':'#9AA69D',
+      '--chip-bg':'#FFFFFF','--chip-line':'#DDE5DC','--chip-ink':'#3C4A41','--chip-hover':'#E5EDE3',
+      '--anon-bg':'rgba(47,107,79,.12)','--anon-ink':'#5A6960',
+      '--send-bg':'#2F6B4F','--send-bg-press':'#27593F','--send-disabled':'#B8C8BC',
+      '--foot-ink':'#5A6960','--statusbar-ink':'#17231D'
+    }},
+    night:{vars:{
+      '--canvas':'#10221B','--field-bg':'#16291F','--field-line':'rgba(255,255,255,.10)',
+      '--title-ink':'#EAF1EB','--sub-ink':'#9DB3A4','--field-ink':'#EAF1EB','--placeholder':'#6E8576',
+      '--chip-bg':'rgba(255,255,255,.05)','--chip-line':'rgba(255,255,255,.12)','--chip-ink':'#CADCCF','--chip-hover':'rgba(255,255,255,.08)',
+      '--anon-bg':'rgba(111,163,122,.16)','--anon-ink':'#9DB3A4',
+      '--send-bg':'#6FA37A','--send-bg-press':'#5E8E6A','--send-disabled':'#3A4A40',
+      '--foot-ink':'#8AA193','--statusbar-ink':'#EAF1EB'
+    }}
+  };
+  function applyTod(key){
+    var t=TOD[key]||TOD.day;
+    TOD_VARS.forEach(function(v){phone.style.removeProperty(v);});
+    Object.keys(t.vars).forEach(function(k){phone.style.setProperty(k,t.vars[k]);});
+  }
+  function autoTod(){
+    var h=new Date().getHours();
+    if(h>=5&&h<11)return 'morning';
+    if(h>=11&&h<17)return 'day';
+    if(h>=17&&h<22)return 'evening';
+    return 'night';
+  }
+  function getTodOverride(){
+    var m = location.search.match(/[?&]tod=(auto|morning|day|evening|night)/);
+    return m ? m[1] : null;
+  }
+  var todOverride = getTodOverride();
+  applyTod(todOverride || autoTod());
+
+  /* 时段切换器（设计演示用）：长按 wx-title 1.5s 弹出，点空白/ESC 关闭 */
+  var todSwitcher = document.getElementById('tod-switcher');
+  var wxTitleEl = document.querySelector('.wx-title');
+  var pressTimer = null;
+  function showTodSwitcher(){
+    if (!todSwitcher) return;
+    todSwitcher.classList.add('show');
+    var cur = todOverride || 'auto';
+    todSwitcher.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('active', b.dataset.tod === cur);
+    });
+  }
+  function hideTodSwitcher(){
+    if (todSwitcher) todSwitcher.classList.remove('show');
+  }
+  if (wxTitleEl) {
+    wxTitleEl.addEventListener('pointerdown', function(){ pressTimer = setTimeout(showTodSwitcher, 1500); });
+    wxTitleEl.addEventListener('pointerup', function(){ clearTimeout(pressTimer); });
+    wxTitleEl.addEventListener('pointerleave', function(){ clearTimeout(pressTimer); });
+  }
+  if (todSwitcher) {
+    todSwitcher.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      var tod = b.dataset.tod;
+      var url = new URL(location.href);
+      if (tod === 'auto') { url.searchParams.delete('tod'); todOverride = null; }
+      else { url.searchParams.set('tod', tod); todOverride = tod; }
+      history.replaceState(null, '', url);
+      applyTod(tod === 'auto' ? autoTod() : tod);
+      todSwitcher.querySelectorAll('button').forEach(function(btn){
+        btn.classList.toggle('active', btn.dataset.tod === tod);
+      });
+    });
+  }
+  document.addEventListener('click', function(e){
+    if (!todSwitcher || !todSwitcher.classList.contains('show')) return;
+    if (!todSwitcher.contains(e.target) && (!wxTitleEl || !wxTitleEl.contains(e.target))) {
+      hideTodSwitcher();
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && todSwitcher && todSwitcher.classList.contains('show')) {
+      hideTodSwitcher();
+    }
+  });
+
+  function refresh(){
+    say.style.height='auto';say.style.height=Math.min(say.scrollHeight,200)+'px';
+    var n=say.value.trim().length;count.textContent=n;send.disabled=n===0;
+  }
+  say.addEventListener('input',refresh);
+  say.addEventListener('focus',function(){speak.classList.add('focused')});
+  say.addEventListener('blur',function(){speak.classList.remove('focused')});
+  document.getElementById('starters').addEventListener('click',function(e){
+    var b=e.target.closest('.starter');if(!b)return;
+    var seed=b.getAttribute('data-seed');
+    say.value=say.value.trim()?say.value.trim()+' '+seed:seed;
+    refresh();say.focus();
+    say.setSelectionRange(say.value.length,say.value.length);
+  });
+  send.addEventListener('click',function(){
+    if(send.disabled)return;
+    send.textContent='已放下';
+    send.style.background='var(--sage)';
+    setTimeout(function(){location.href='chat.html';},420);
+  });
+  function open(){scrim.classList.add('show');sheet.classList.add('show');}
+  function close(){scrim.classList.remove('show');sheet.classList.remove('show');}
+  document.getElementById('open-privacy').addEventListener('click',open);
+  document.getElementById('close-privacy').addEventListener('click',close);
+  scrim.addEventListener('click',close);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  refresh();
+})();
+</script>
+</body>
+</html>

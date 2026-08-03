@@ -1,0 +1,136 @@
+/* ============================================================
+   陷空山 V2 · 唯一 token 源（取自 design-system.html）
+   —— 时段无关基础 token 定义在 :root
+   —— 时段相关语义 token 定义在 .tod-* 四套 palette
+   —— 组件只引用语义 token，不直接引用 hex（对齐设计契约）
+   ============================================================ */
+:root {
+  /* 品牌与状态色（时段无关） */
+  --sage: #6fa37a;
+  --deep: #2f6b4f;
+  --deep-press: #27593f;
+  --notice: #b9894b;
+  --danger: #b85c5c;
+  --soft: #eef5ee;
+  --line-soft: #edf2ed;
+  --notice-wash: #f5eee0;
+  --sage-wash: rgba(111, 163, 122, 0.1);
+  --sage-wash-2: rgba(111, 163, 122, 0.16);
+
+  /* 形状 / 阴影 / 动效 */
+  --r-card: 8px;
+  --r-field: 16px;
+  --r-bubble: 14px;
+  --r-pill: 999px;
+  --tap: 48px;
+  --shadow-soft: 0 1px 2px rgba(23, 35, 29, 0.04), 0 10px 30px rgba(23, 35, 29, 0.06);
+  --shadow-input: 0 2px 4px rgba(23, 35, 29, 0.03), 0 16px 40px rgba(23, 35, 29, 0.07);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', system-ui, sans-serif;
+
+  /* 语义 token 默认值 = 白天态（未套 .tod-* 时的兜底） */
+  --canvas: #f7faf6;
+  --field-bg: #ffffff;
+  --field-line: #e2eae2;
+  --title-ink: #17231d;
+  --sub-ink: #66756a;
+  --field-ink: #17231d;
+  --placeholder: #a6b2a9;
+  --user-bubble: #eef5ee;
+  --user-bubble-ink: #17231d;
+  --ai-bubble: #ffffff;
+  --ai-bubble-line: #e2eae2;
+  --ai-bubble-ink: #17231d;
+  --chip-bg: #ffffff;
+  --chip-line: #e2eae2;
+  --chip-ink: #3c4a41;
+  --chip-hover: #eef5ee;
+  --anon-bg: rgba(111, 163, 122, 0.1);
+  --anon-ink: #66756a;
+  --send-bg: #2f6b4f;
+  --send-bg-press: #27593f;
+  --send-disabled: #c3d2c6;
+  --foot-ink: #66756a;
+  --risk-line-opacity: 0.7;
+}
+
+.tod-morning,
+.tod-day {
+  --canvas: #f7faf6;
+  --field-bg: #ffffff;
+  --field-line: #e2eae2;
+  --title-ink: #17231d;
+  --sub-ink: #66756a;
+  --field-ink: #17231d;
+  --placeholder: #a6b2a9;
+  --user-bubble: #eef5ee;
+  --user-bubble-ink: #17231d;
+  --ai-bubble: #ffffff;
+  --ai-bubble-line: #e2eae2;
+  --ai-bubble-ink: #17231d;
+  --chip-bg: #ffffff;
+  --chip-line: #e2eae2;
+  --chip-ink: #3c4a41;
+  --chip-hover: #eef5ee;
+  --anon-bg: rgba(111, 163, 122, 0.1);
+  --anon-ink: #66756a;
+  --send-bg: #2f6b4f;
+  --send-bg-press: #27593f;
+  --send-disabled: #c3d2c6;
+  --foot-ink: #66756a;
+  --risk-line-opacity: 0.7;
+}
+
+.tod-evening {
+  --canvas: #eef2ec;
+  --field-bg: #ffffff;
+  --field-line: #dde5dc;
+  --title-ink: #17231d;
+  --sub-ink: #5a6960;
+  --field-ink: #17231d;
+  --placeholder: #9aa69d;
+  --user-bubble: #e5ede3;
+  --user-bubble-ink: #17231d;
+  --ai-bubble: #ffffff;
+  --ai-bubble-line: #dde5dc;
+  --ai-bubble-ink: #17231d;
+  --chip-bg: #ffffff;
+  --chip-line: #dde5dc;
+  --chip-ink: #3c4a41;
+  --chip-hover: #e5ede3;
+  --anon-bg: rgba(47, 107, 79, 0.12);
+  --anon-ink: #5a6960;
+  --send-bg: #2f6b4f;
+  --send-bg-press: #27593f;
+  --send-disabled: #b8c8bc;
+  --foot-ink: #5a6960;
+  --risk-line-opacity: 0.8;
+}
+
+/* 深夜 A 路线：对齐 chat.html night palette（发送键换 sage，风险条 opacity .95） */
+.tod-night {
+  --canvas: #10221b;
+  --field-bg: #16291f;
+  --field-line: rgba(255, 255, 255, 0.1);
+  --title-ink: #eaf1eb;
+  --sub-ink: #9db3a4;
+  --field-ink: #eaf1eb;
+  --placeholder: #6e8576;
+  --user-bubble: rgba(255, 255, 255, 0.06);
+  --user-bubble-ink: #eaf1eb;
+  --ai-bubble: #16291f;
+  --ai-bubble-line: rgba(255, 255, 255, 0.1);
+  --ai-bubble-ink: #eaf1eb;
+  --chip-bg: rgba(255, 255, 255, 0.05);
+  --chip-line: rgba(255, 255, 255, 0.12);
+  --chip-ink: #cadccf;
+  --chip-hover: rgba(255, 255, 255, 0.08);
+  --anon-bg: rgba(111, 163, 122, 0.16);
+  --anon-ink: #9db3a4;
+  --send-bg: #6fa37a;
+  --send-bg-press: #5e8e6a;
+  --send-disabled: #3a4a40;
+  --foot-ink: #8aa193;
+  --risk-line-opacity: 0.95;
+}

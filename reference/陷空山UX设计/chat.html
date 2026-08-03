@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>陷空山 · 会话</title>
+<style>
+  :root{
+    /* —— 唯一 token 源：用户提供的全套色值 —— */
+    --bg:#F7FAF6;
+    --surface:#FFFFFF;
+    --soft:#EEF5EE;
+    --ink:#17231D;
+    --muted:#66756A;
+    --sage:#6FA37A;
+    --deep:#2F6B4F;
+    --notice:#B9894B;
+    --danger:#B85C5C;
+
+    /* —— 派生次级 token（从上面推导，不另引入新色相）—— */
+    --line:#E2EAE2;            /* 雾白上的发丝边框 */
+    --line-soft:#EDF2ED;
+    --ink-2:#3C4A41;           /* 次级正文 */
+    --sage-wash:rgba(111,163,122,.10);
+    --deep-press:#27593F;
+    --notice-wash:#F5EEE0;
+    --danger-wash:#F6EAEA;
+    --shadow-soft:0 1px 2px rgba(23,35,29,.04), 0 8px 24px rgba(23,35,29,.05);
+
+    --r-card:8px;
+    --r-bubble:14px;
+    --r-pill:999px;
+
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
+
+    --tap:48px;                /* 主操作触控高度，≥44 */
+    --ease:cubic-bezier(.2,.7,.2,1);
+    --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+
+    /* —— 时段驱动语义 token 层（home-c 同源，JS autoTod 改这层）——
+       默认 = 白天态（与 home-c day 一致）。深夜态由 JS 覆盖。
+       组件全部引用语义 token，不直接引用 --bg/--surface 等。 */
+    --canvas:var(--bg);
+    --field-bg:var(--surface);
+    --field-line:var(--line);
+    --title-ink:var(--ink);
+    --sub-ink:var(--muted);
+    --field-ink:var(--ink);
+    --placeholder:#A6B2A9;
+    --user-bubble:var(--soft);
+    --user-bubble-ink:var(--ink);
+    --ai-bubble:var(--surface);
+    --ai-bubble-line:var(--line);
+    --ai-bubble-ink:var(--ink);
+    --chip-bg:var(--surface);
+    --chip-line:var(--line);
+    --chip-ink:var(--ink-2);
+    --anon-bg:var(--sage-wash);
+    --anon-ink:var(--muted);
+    --send-bg:var(--deep);
+    --send-bg-press:var(--deep-press);
+    --send-disabled:#C3D2C6;
+    --foot-ink:var(--muted);
+    --statusbar-ink:var(--ink);
+    --risk-line-opacity:.7;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--font);
+    color:var(--ink);
+    background:#0d100e;          /* 舞台背景：托住手机帧 */
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    padding:32px 20px;
+    min-height:100vh;
+    flex-wrap:wrap;
+  }
+
+  /* ============ 手机帧 ============ */
+  .phone{
+    width:390px;
+    height:844px;
+    background:var(--canvas);
+    border-radius:46px;
+    position:relative;
+    box-shadow:0 0 0 11px #1c211e, 0 0 0 13px #2a302c, 0 40px 90px rgba(0,0,0,.5);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    flex:0 0 auto;
+    transition:background .3s var(--ease);
+  }
+  .dynamic-island{
+    position:absolute;top:11px;left:50%;transform:translateX(-50%);
+    width:118px;height:34px;background:#050706;border-radius:var(--r-pill);z-index:60;
+  }
+  .statusbar{
+    height:54px;flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 26px 6px;font-size:14px;font-weight:600;color:var(--statusbar-ink);letter-spacing:.02em;
+    position:relative;z-index:2;transition:color .3s var(--ease);
+  }
+  .statusbar .sb-right{display:flex;align-items:center;gap:6px}
+  .statusbar svg{display:block}
+  /* 状态栏图标用 currentColor，深夜随 --statusbar-ink 反色 */
+  .statusbar svg path,.statusbar svg rect,.statusbar svg circle{transition:fill .3s var(--ease),stroke .3s var(--ease)}
+
+  /* WeChat 风格导航条 */
+  .navbar{
+    flex:0 0 auto;height:46px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+    padding:0 16px;background:transparent;position:relative;z-index:40;
+  }
+  .navbar .nav-back{display:flex;align-items:center;color:var(--title-ink);transition:color .3s var(--ease)}
+  .navbar .nav-back svg path{stroke:var(--title-ink);transition:stroke .3s var(--ease)}
+  .navbar .nav-title{
+    text-align:center;font-size:17px;font-weight:600;letter-spacing:.06em;color:var(--title-ink);transition:color .3s var(--ease);
+  }
+  .navbar .nav-cap{
+    justify-self:end;display:flex;align-items:center;gap:0;
+    border:1px solid var(--field-line);border-radius:var(--r-pill);height:30px;width:78px;
+    background:rgba(255,255,255,.5);transition:border-color .3s var(--ease),background .3s var(--ease);
+  }
+  .nav-cap .cap-cell{flex:1;display:grid;place-items:center;color:var(--sub-ink);transition:color .3s var(--ease)}
+  .nav-cap .cap-cell svg path,.nav-cap .cap-cell svg circle{fill:var(--sub-ink);transition:fill .3s var(--ease)}
+  .nav-cap .cap-cell svg circle[stroke]{fill:none;stroke:var(--sub-ink);transition:stroke .3s var(--ease)}
+  .nav-cap .cap-div{width:1px;height:16px;background:var(--field-line);transition:background .3s var(--ease)}
+
+  /* 时段切换器（设计演示用，长按 nav-title 1.5s 弹出，3s 自动隐藏）
+     刻意保持白底反差，不接时段 token——与隐私 sheet 同一原则 */
+  .tod-switcher{
+    position:absolute;top:48px;left:50%;transform:translateX(-50%);
+    display:none;gap:2px;padding:5px;background:#FFFFFF;
+    border:1px solid #E2EAE2;border-radius:var(--r-pill);
+    box-shadow:0 4px 16px rgba(23,35,29,.12);z-index:90;
+  }
+  .tod-switcher.show{display:flex}
+  .tod-switcher button{
+    appearance:none;border:0;background:transparent;color:#66756A;
+    font-family:inherit;font-size:12px;padding:6px 11px;border-radius:var(--r-pill);
+    cursor:pointer;letter-spacing:.02em;transition:background .15s,color .15s;
+  }
+  .tod-switcher button:hover{background:#EEF5EE}
+  .tod-switcher button.active{background:rgba(111,163,122,.16);color:#2F6B4F}
+
+  /* ============ 会话区 ============ */
+  .stream{
+    flex:1 1 auto;overflow-y:auto;overflow-x:hidden;
+    padding:8px 20px 14px;
+    display:flex;flex-direction:column;gap:18px;
+    scroll-behavior:smooth;
+    -webkit-overflow-scrolling:touch;
+  }
+  .stream::-webkit-scrollbar{width:0}
+
+  /* 初始低压入口 */
+  .opening{
+    margin-top:8px;display:flex;flex-direction:column;gap:6px;padding:6px 2px 2px;
+  }
+  .opening .om-kicker{
+    font-size:11px;letter-spacing:.18em;color:var(--sage);text-transform:none;font-weight:600;
+    display:flex;align-items:center;gap:7px;
+  }
+  .opening .om-kicker .dot{width:5px;height:5px;border-radius:50%;background:var(--sage);display:inline-block}
+  .opening .om-line{
+    font-size:21px;line-height:1.5;color:var(--title-ink);font-weight:600;margin-top:8px;letter-spacing:.01em;
+    transition:color .3s var(--ease);
+  }
+  .opening .om-sub{font-size:14px;line-height:1.6;color:var(--sub-ink);max-width:30ch;transition:color .3s var(--ease)}
+  /* 层二 当日频次觉察：opening 下追加的承认行，比 om-sub 更轻 */
+  .opening .om-freq{
+    margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--sub-ink);
+    max-width:32ch;letter-spacing:.01em;opacity:.85;
+    border-left:2px solid var(--field-line);padding-left:10px;transition:color .3s var(--ease),border-color .3s var(--ease);
+  }
+
+  /* 消息气泡 */
+  .msg{display:flex;flex-direction:column;max-width:84%}
+  .msg.user{align-self:flex-end;align-items:flex-end}
+  .msg.ai{align-self:flex-start;align-items:flex-start}
+  .bubble{
+    border-radius:var(--r-bubble);padding:12px 15px;font-size:15.5px;line-height:1.62;
+    letter-spacing:.005em;word-break:break-word;
+    transition:background .3s var(--ease),color .3s var(--ease),border-color .3s var(--ease);
+  }
+  .msg.user .bubble{
+    background:var(--user-bubble);color:var(--user-bubble-ink);border-bottom-right-radius:6px;
+  }
+  .msg.ai .bubble{
+    background:var(--ai-bubble);color:var(--ai-bubble-ink);border:1px solid var(--ai-bubble-line);
+    border-bottom-left-radius:6px;box-shadow:var(--shadow-soft);
+  }
+  .msg.ai .bubble p+p{margin-top:10px}
+  .msg .meta{font-size:11px;color:var(--sub-ink);margin:7px 4px 0;letter-spacing:.04em;transition:color .3s var(--ease)}
+  .msg.ai .meta{display:flex;align-items:center;gap:6px}
+  .msg.ai .meta .mk{width:14px;height:14px;border-radius:50%;background:var(--sage-wash);display:grid;place-items:center;color:var(--deep)}
+
+  /* 回复底部轻量后续动作 */
+  .followups{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+  .chip{
+    border:1px solid var(--chip-line);background:var(--chip-bg);color:var(--chip-ink);
+    border-radius:var(--r-pill);padding:8px 14px;font-size:13px;line-height:1;
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    transition:background .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease);
+    min-height:36px;
+  }
+  .chip:hover{background:var(--sage-wash);border-color:var(--sage)}
+  .chip:active{background:var(--sage-wash)}
+  .chip.calm{color:var(--deep);border-color:transparent;background:var(--sage-wash)}
+  .chip svg{color:var(--sage)}
+
+  /* 思考中 */
+  .thinking{display:flex;flex-direction:column;align-self:flex-start;gap:10px;max-width:84%}
+  .thinking .think-row{
+    display:inline-flex;align-items:center;gap:10px;background:var(--ai-bubble);
+    border:1px solid var(--ai-bubble-line);border-radius:var(--r-bubble);border-bottom-left-radius:6px;
+    padding:13px 16px;box-shadow:var(--shadow-soft);transition:background .3s var(--ease),border-color .3s var(--ease);
+  }
+  .think-dots{display:inline-flex;gap:5px;align-items:center}
+  .think-dots i{width:7px;height:7px;border-radius:50%;background:var(--sage);opacity:.45;animation:breathe 1.4s var(--ease) infinite}
+  .think-dots i:nth-child(2){animation-delay:.18s}
+  .think-dots i:nth-child(3){animation-delay:.36s}
+  .think-label{font-size:13.5px;color:var(--sub-ink);letter-spacing:.02em;transition:color .3s var(--ease)}
+  @keyframes breathe{0%,100%{opacity:.3;transform:translateY(0)}45%{opacity:1;transform:translateY(-2px)}}
+  .slow-hint{
+    display:none;font-size:13px;color:var(--notice);background:var(--notice-wash);
+    border-radius:var(--r-card);padding:10px 13px;line-height:1.55;align-items:flex-start;gap:8px;
+    max-width:30ch;
+  }
+  .slow-hint.show{display:flex}
+  .slow-hint .retry{margin-left:2px;color:var(--deep);font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:underline;text-underline-offset:2px}
+
+  /* 网络错误条 */
+  .errorbar{
+    align-self:stretch;display:none;background:var(--ai-bubble);border:1px solid var(--ai-bubble-line);
+    border-radius:var(--r-card);padding:13px 15px;gap:12px;align-items:flex-start;box-shadow:var(--shadow-soft);
+    transition:background .3s var(--ease),border-color .3s var(--ease);
+  }
+  .errorbar.show{display:flex}
+  .errorbar .eb-ic{flex:0 0 auto;color:var(--notice);margin-top:1px}
+  .errorbar .eb-body{flex:1;display:flex;flex-direction:column;gap:3px}
+  .errorbar .eb-title{font-size:14px;font-weight:600;color:var(--ai-bubble-ink);transition:color .3s var(--ease)}
+  .errorbar .eb-sub{font-size:13px;color:var(--sub-ink);line-height:1.55;transition:color .3s var(--ease)}
+  .errorbar .eb-retry{
+    flex:0 0 auto;align-self:center;border:1px solid var(--deep);color:var(--deep);background:transparent;
+    border-radius:var(--r-pill);padding:8px 16px;font-size:13px;cursor:pointer;min-height:36px;font-family:inherit;
+    transition:background .18s var(--ease);
+  }
+  .errorbar .eb-retry:active{background:var(--sage-wash)}
+
+  /* 风险提醒（克制，不报警刷屏）
+     暖褐左侧细条 opacity 由 --risk-line-opacity 控制 ——
+     白天 .7 让 high 在会话流里"被看见"但不"被惊吓"；
+     深夜态 JS 抬到 .95 补暗面对比度，仍非报警红 */
+  .risk{
+    align-self:stretch;display:none;flex-direction:column;gap:10px;
+    background:var(--ai-bubble);border:1px solid var(--ai-bubble-line);border-radius:var(--r-card);
+    padding:16px;box-shadow:var(--shadow-soft);position:relative;
+    transition:background .3s var(--ease),border-color .3s var(--ease);
+  }
+  .risk.show{display:flex}
+  .risk::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--notice);opacity:var(--risk-line-opacity);transition:opacity .3s var(--ease)}
+  .risk .rk-head{display:flex;align-items:center;gap:9px;color:var(--ai-bubble-ink);transition:color .3s var(--ease)}
+  .risk .rk-head .rk-ic{color:var(--notice)}
+  .risk .rk-head .rk-t{font-size:15px;font-weight:600;letter-spacing:.01em}
+  .risk .rk-body{font-size:14px;line-height:1.66;color:var(--sub-ink);transition:color .3s var(--ease)}
+  .risk .rk-body strong{color:var(--ai-bubble-ink);font-weight:600;transition:color .3s var(--ease)}
+  .risk .rk-actions{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+  .risk .rk-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;min-height:var(--tap);
+    border-radius:var(--r-card);font-size:14.5px;font-weight:600;cursor:pointer;font-family:inherit;
+    transition:background .18s var(--ease);
+  }
+  .risk .rk-btn.primary{background:var(--send-bg);color:#fff;border:0}
+  .risk .rk-btn.primary:active{background:var(--send-bg-press)}
+  .risk .rk-btn.ghost{background:transparent;color:var(--chip-ink);border:1px solid var(--chip-line)}
+  .risk .rk-btn.ghost:active{background:var(--sage-wash)}
+  .risk .rk-note{font-size:12px;color:var(--sub-ink);line-height:1.55;text-align:center;transition:color .3s var(--ease)}
+
+  /* ============ 底部输入坞 ============ */
+  .dock{
+    flex:0 0 auto;background:var(--canvas);border-top:1px solid var(--field-line);
+    padding:10px 16px calc(8px + env(safe-area-inset-bottom)) 16px;
+    transition:background .3s var(--ease),border-color .3s var(--ease);
+  }
+  .secondary-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:0 2px 9px;min-height:20px;
+  }
+  .hint-treehole{font-size:12px;color:var(--foot-ink);letter-spacing:.01em;display:flex;align-items:center;gap:6px;transition:color .3s var(--ease)}
+  .hint-treehole svg{color:var(--sage);opacity:.85}
+  .privacy-entry{
+    display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--foot-ink);
+    cursor:pointer;padding:5px 8px;border-radius:var(--r-pill);transition:color .18s,background .18s;
+  }
+  .privacy-entry:hover{color:var(--deep);background:var(--sage-wash)}
+  .privacy-entry svg{color:var(--foot-ink);transition:color .3s var(--ease)}
+
+  .composer{
+    display:flex;align-items:flex-end;gap:10px;background:var(--field-bg);
+    border:1px solid var(--field-line);border-radius:18px;padding:8px 8px 8px 14px;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease),background .3s var(--ease);
+  }
+  .composer.focused{border-color:var(--sage);box-shadow:0 0 0 3px var(--sage-wash)}
+  /* high 态：composer 可用但不邀请 —— 聚焦时也不显示 sage 描边/柔光环 */
+  .phone.risk-active .composer.focused{border-color:var(--field-line);box-shadow:none}
+  .composer textarea{
+    flex:1;border:0;outline:0;resize:none;background:transparent;font-family:inherit;
+    font-size:15.5px;line-height:1.55;color:var(--field-ink);max-height:104px;min-height:26px;padding:5px 0;
+    transition:color .3s var(--ease);
+  }
+  .composer textarea::placeholder{color:var(--placeholder);transition:color .3s var(--ease)}
+  .send{
+    flex:0 0 auto;width:var(--tap);height:var(--tap);border-radius:14px;border:0;cursor:pointer;
+    background:var(--send-bg);color:#fff;display:grid;place-items:center;
+    transition:background .18s var(--ease),transform .12s var(--ease),opacity .18s;
+  }
+  .send:active{transform:translateY(1px)}
+  .send:disabled{background:var(--send-disabled);cursor:default}
+  .send.armed{background:var(--send-bg)}
+
+  /* 空输入温柔提醒：跟随 title-ink 的深色，深夜态自动协调 */
+  .nudge{
+    position:absolute;left:16px;right:16px;bottom:calc(100% + 8px);
+    background:var(--title-ink);color:var(--canvas);font-size:13px;line-height:1.5;padding:10px 14px;border-radius:var(--r-card);
+    opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .2s var(--ease),transform .2s var(--ease),background .3s var(--ease),color .3s var(--ease);
+    box-shadow:0 8px 24px rgba(0,0,0,.18);
+  }
+  .nudge.show{opacity:1;transform:translateY(0)}
+  .dock-wrap{position:relative}
+
+  /* ============ Bottom sheet：信任与边界 ============ */
+  .scrim{
+    position:absolute;inset:0;background:rgba(13,16,14,.34);opacity:0;pointer-events:none;
+    transition:opacity .26s var(--ease);z-index:70;
+  }
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;background:var(--surface);
+    border-radius:20px 20px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom));
+    transform:translateY(102%);transition:transform .3s var(--ease);z-index:80;
+    box-shadow:0 -8px 40px rgba(13,16,14,.16);max-height:86%;overflow-y:auto;
+  }
+  .sheet.show{transform:translateY(0)}
+  .sheet .grab{width:38px;height:4px;border-radius:4px;background:var(--line);margin:8px auto 16px}
+  .sheet .sh-title{font-size:18px;font-weight:600;color:var(--ink);letter-spacing:.02em;margin-bottom:4px}
+  .sheet .sh-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px}
+  .trust-list{display:flex;flex-direction:column;gap:2px}
+  .trust-item{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line-soft);align-items:flex-start}
+  .trust-item:last-child{border-bottom:0}
+  .trust-item .ti-ic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--soft);display:grid;place-items:center;color:var(--deep);margin-top:1px}
+  .trust-item .ti-body{flex:1}
+  .trust-item .ti-t{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:3px;letter-spacing:.01em}
+  .trust-item .ti-d{font-size:13px;color:var(--muted);line-height:1.6}
+  .sheet .sh-foot{
+    margin-top:18px;display:flex;gap:10px;
+  }
+  .sheet .sh-clear{
+    flex:1;min-height:var(--tap);border-radius:var(--r-card);border:1px solid var(--line);
+    background:transparent;color:var(--ink-2);font-size:14.5px;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:7px;transition:background .18s;
+  }
+  .sheet .sh-clear:active{background:var(--soft)}
+  .sheet .sh-clear svg{color:var(--muted)}
+  .sheet .sh-done{
+    flex:1;min-height:var(--tap);border-radius:var(--r-card);border:0;background:var(--deep);color:#fff;
+    font-size:14.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .18s;
+  }
+  .sheet .sh-done:active{background:var(--deep-press)}
+
+  /* ============ 清除确认弹层 ============ */
+  .confirm{
+    position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:32px;z-index:90;
+  }
+  .confirm.show{display:flex}
+  .confirm .cf-scrim{position:absolute;inset:0;background:rgba(13,16,14,.4)}
+  .confirm .cf-card{
+    position:relative;background:var(--surface);border-radius:16px;padding:22px 20px 18px;width:100%;max-width:300px;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);transform:scale(.94);opacity:0;transition:transform .22s var(--ease),opacity .22s var(--ease);
+  }
+  .confirm.show .cf-card{transform:scale(1);opacity:1}
+  .confirm .cf-t{font-size:16.5px;font-weight:600;color:var(--ink);margin-bottom:8px;text-align:center}
+  .confirm .cf-d{font-size:13.5px;color:var(--muted);line-height:1.6;text-align:center;margin-bottom:20px}
+  .confirm .cf-actions{display:flex;gap:10px}
+  .confirm .cf-cancel{flex:1;min-height:44px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink-2);font-size:14.5px;cursor:pointer;font-family:inherit}
+  .confirm .cf-ok{flex:1;min-height:44px;border-radius:10px;border:0;background:var(--danger);color:#fff;font-size:14.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .confirm .cf-ok:active{background:#a44f4f}
+  .confirm .cf-cancel:active{background:var(--soft)}
+
+  @media (max-width:720px){
+    body{flex-direction:column;background:#0d100e;padding:18px 0 0}
+    .phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}
+    .dynamic-island{display:none}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ 产品：手机帧 ============ -->
+  <div class="phone" id="phone">
+    <div class="dynamic-island"></div>
+
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="sb-right">
+        <!-- 信号 -->
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="1" fill="currentColor"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="currentColor"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="currentColor"/></svg>
+        <!-- wifi -->
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 2.3c2.3 0 4.4.9 6 2.3l-1.3 1.5A7 7 0 0 0 8 4.3a7 7 0 0 0-4.7 1.8L2 4.6A8.9 8.9 0 0 1 8 2.3Z" fill="currentColor"/><path d="M8 5.8c1.3 0 2.5.5 3.4 1.3l-1.4 1.6A2.7 2.7 0 0 0 8 7.8c-.7 0-1.4.3-2 .9L4.6 7.1A5 5 0 0 1 8 5.8Z" fill="currentColor"/><circle cx="8" cy="10" r="1.3" fill="currentColor"/></svg>
+        <!-- 电池 -->
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-opacity=".4"/><rect x="2.6" y="2.6" width="16" height="6.8" rx="1.6" fill="currentColor"/><rect x="23" y="4" width="1.6" height="4" rx="1" fill="currentColor" fill-opacity=".4"/></svg>
+      </span>
+    </div>
+
+    <!-- WeChat 风格导航条 -->
+    <div class="navbar">
+      <span class="nav-back" role="button" tabindex="0" aria-label="返回首页">
+        <svg width="11" height="19" viewBox="0 0 11 19" fill="none"><path d="M9.5 1.5 2 9.5l7.5 8" stroke="#17231D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="nav-title">陷空山</span>
+      <span class="nav-cap" aria-hidden="true">
+        <span class="cap-cell"><svg width="18" height="5" viewBox="0 0 18 5" fill="none"><circle cx="2.5" cy="2.5" r="1.6" fill="#3C4A41"/><circle cx="9" cy="2.5" r="1.6" fill="#3C4A41"/><circle cx="15.5" cy="2.5" r="1.6" fill="#3C4A41"/></svg></span>
+        <span class="cap-div"></span>
+        <span class="cap-cell"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="#3C4A41" stroke-width="1.3"/><circle cx="7.5" cy="7.5" r="1.4" fill="#3C4A41"/></svg></span>
+      </span>
+    </div>
+
+    <!-- 时段切换器（设计演示用，长按标题 1.5s 弹出） -->
+    <div class="tod-switcher" id="tod-switcher" role="dialog" aria-label="时段切换（设计演示用）">
+      <button type="button" data-tod="auto">跟随</button>
+      <button type="button" data-tod="morning">清晨</button>
+      <button type="button" data-tod="day">白天</button>
+      <button type="button" data-tod="evening">傍晚</button>
+      <button type="button" data-tod="night">深夜</button>
+    </div>
+    <main class="stream" id="stream">
+      <!-- 初始低压入口 -->
+      <section class="opening" id="opening">
+        <span class="om-kicker"><span class="dot"></span>这里只你一个人，匿名</span>
+        <p class="om-line">慢慢说，我在这里。</p>
+        <p class="om-sub">把现在最想说的一句，先放下来。不必完整，不必体面。</p>
+        <p class="om-freq" id="om-freq" style="display:none"></p>
+      </section>
+      <!-- 消息动态插入 -->
+    </main>
+
+    <!-- 底部输入坞 -->
+    <div class="dock">
+      <div class="dock-wrap">
+        <div class="nudge" id="nudge">还没写呢——一个词、半句话都可以。</div>
+        <div class="secondary-row">
+          <span class="hint-treehole">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5c-3 0-5 2.2-5 5 0 1.7.9 3.2 2.3 4.1.3.2.4.4.4.7v.4c0 .4.3.7.7.7h3.2c.4 0 .7-.3.7-.7v-.4c0-.3.1-.5.4-.7C11.1 9.7 12 8.2 12 6.5c0-2.8-2-5-5-5Z" stroke="#6FA37A" stroke-width="1.2" stroke-linejoin="round"/><circle cx="7" cy="6.3" r="1.4" stroke="#6FA37A" stroke-width="1.1"/></svg>
+            以后也可以把心事放进树洞
+          </span>
+          <span class="privacy-entry" id="open-privacy">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1 2 2.8v3.3c0 2.8 1.9 4.6 4.5 5.6 2.6-1 4.5-2.8 4.5-5.6V2.8L6.5 1Z" stroke="#66756A" stroke-width="1.1" stroke-linejoin="round"/><path d="M4.8 6.4 6 7.6l2.3-2.4" stroke="#66756A" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            隐私与边界
+          </span>
+        </div>
+        <div class="composer" id="composer">
+          <textarea id="input" rows="1" placeholder="写下一句现在最想说的话" enterkeyhint="send"></textarea>
+          <button class="send" id="send" aria-label="发送" disabled>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10 17 3l-4.2 14L9.5 11 3 10Z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom sheet：信任与边界 -->
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-label="隐私与边界">
+      <div class="grab"></div>
+      <p class="sh-title">隐私与边界</p>
+      <p class="sh-sub">我们只说现在能做到的。下面四点都不夸大。</p>
+      <div class="trust-list">
+        <div class="trust-item">
+          <span class="ti-ic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="5.5" r="3" stroke="#2F6B4F" stroke-width="1.3"/><path d="M3 14c0-2.8 2.5-4.5 5.5-4.5S14 11.2 14 14" stroke="#2F6B4F" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+          <div class="ti-body"><p class="ti-t">匿名使用</p><p class="ti-d">不需要注册、不绑定身份，也不要求你说出「你是谁」。</p></div>
+        </div>
+        <div class="trust-item">
+          <span class="ti-ic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="3" y="7" width="11" height="7.5" rx="1.6" stroke="#2F6B4F" stroke-width="1.3"/><path d="M5.5 7V5a3 3 0 0 1 6 0v2" stroke="#2F6B4F" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+          <div class="ti-body"><p class="ti-t">密钥只在服务端</p><p class="ti-d">模型的接口密钥保存在服务器，不写进小程序客户端。</p></div>
+        </div>
+        <div class="trust-item">
+          <span class="ti-ic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M8.5 2.5C5 4 3 4.3 3 4.3v4.4c0 3.3 2.4 5.3 5.5 6.3 3.1-1 5.5-3 5.5-6.3V4.3s-2-.3-5.5-1.8Z" stroke="#2F6B4F" stroke-width="1.3" stroke-linejoin="round"/></svg></span>
+          <div class="ti-body"><p class="ti-t">情绪支持，不是医疗诊断</p><p class="ti-d">这里的回应只陪你整理情绪，不替代医生、咨询师或专业治疗。</p></div>
+        </div>
+        <div class="trust-item">
+          <span class="ti-ic"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M3.5 5h10M6 5V3.8C6 3.3 6.4 3 6.8 3h3.4c.4 0 .8.3.8.8V5m1 0-.6 8.2c0 .5-.4.8-.9.8H5.5c-.5 0-.9-.3-.9-.8L4 5" stroke="#2F6B4F" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <div class="ti-body"><p class="ti-t">可随时清除本次内容</p><p class="ti-d">你可以一键清空这次会话的对话记录，从这台设备上移除。</p></div>
+        </div>
+      </div>
+      <div class="sh-foot">
+        <button class="sh-clear" id="open-clear">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 4h9M5.5 4V3c0-.4.3-.7.7-.7h2.6c.4 0 .7.3.7.7v1m1 0-.5 7.4c0 .4-.4.7-.8.7H5.3c-.4 0-.8-.3-.8-.7L4 4" stroke="#66756A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          清除本次内容
+        </button>
+        <button class="sh-done" id="close-privacy">我知道了</button>
+      </div>
+    </div>
+
+    <!-- 清除确认 -->
+    <div class="confirm" id="confirm" role="dialog" aria-label="清除确认">
+      <div class="cf-scrim" id="cf-scrim"></div>
+      <div class="cf-card">
+        <p class="cf-t">清除这次的内容？</p>
+        <p class="cf-d">这次会话里的对话会从这台设备上移除，无法恢复。</p>
+        <div class="cf-actions">
+          <button class="cf-cancel" id="cf-cancel">先留着</button>
+          <button class="cf-ok" id="cf-ok">清除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var stream   = document.getElementById('stream');
+  var opening  = document.getElementById('opening');
+  var input    = document.getElementById('input');
+  var send     = document.getElementById('send');
+  var composer = document.getElementById('composer');
+  var nudge    = document.getElementById('nudge');
+  var scrim    = document.getElementById('scrim');
+  var sheet    = document.getElementById('sheet');
+  var confirm  = document.getElementById('confirm');
+  var phone    = document.getElementById('phone');
+
+  var slowTimer = null, thinkTimer = null;
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============================================================
+     时段感知（home-c 同源，四套 palette）
+     —— autoTod 按真实时间自动套用，无手动切换器（产品页非评审页）
+     —— 深夜态走 A 路线：暗 canvas #10221B + 组件层提亮拉开层次
+     —— 发送键深夜从 deep #2F6B4F 换 sage #6FA37A（deep 在暗面上对比度不足）
+     —— 风险卡细条深夜抬到 .95 补暗面对比度，仍非报警红
+     ============================================================ */
+  var TOD_VARS = ['--canvas','--field-bg','--field-line','--title-ink','--sub-ink',
+    '--field-ink','--placeholder','--user-bubble','--user-bubble-ink','--ai-bubble',
+    '--ai-bubble-line','--ai-bubble-ink','--chip-bg','--chip-line','--chip-ink',
+    '--anon-bg','--anon-ink','--send-bg','--send-bg-press','--send-disabled',
+    '--foot-ink','--statusbar-ink','--risk-line-opacity'];
+  var TOD = {
+    morning:{vars:{
+      '--canvas':'#F7FAF6','--field-bg':'#FFFFFF','--field-line':'#E2EAE2',
+      '--title-ink':'#17231D','--sub-ink':'#66756A','--field-ink':'#17231D','--placeholder':'#A6B2A9',
+      '--user-bubble':'#EEF5EE','--user-bubble-ink':'#17231D','--ai-bubble':'#FFFFFF','--ai-bubble-line':'#E2EAE2','--ai-bubble-ink':'#17231D',
+      '--chip-bg':'#FFFFFF','--chip-line':'#E2EAE2','--chip-ink':'#3C4A41',
+      '--anon-bg':'rgba(111,163,122,.10)','--anon-ink':'#66756A',
+      '--send-bg':'#2F6B4F','--send-bg-press':'#27593F','--send-disabled':'#C3D2C6',
+      '--foot-ink':'#66756A','--statusbar-ink':'#17231D','--risk-line-opacity':'.7'
+    }},
+    day:{vars:{
+      '--canvas':'#F7FAF6','--field-bg':'#FFFFFF','--field-line':'#E2EAE2',
+      '--title-ink':'#17231D','--sub-ink':'#66756A','--field-ink':'#17231D','--placeholder':'#A6B2A9',
+      '--user-bubble':'#EEF5EE','--user-bubble-ink':'#17231D','--ai-bubble':'#FFFFFF','--ai-bubble-line':'#E2EAE2','--ai-bubble-ink':'#17231D',
+      '--chip-bg':'#FFFFFF','--chip-line':'#E2EAE2','--chip-ink':'#3C4A41',
+      '--anon-bg':'rgba(111,163,122,.10)','--anon-ink':'#66756A',
+      '--send-bg':'#2F6B4F','--send-bg-press':'#27593F','--send-disabled':'#C3D2C6',
+      '--foot-ink':'#66756A','--statusbar-ink':'#17231D','--risk-line-opacity':'.7'
+    }},
+    evening:{vars:{
+      '--canvas':'#EEF2EC','--field-bg':'#FFFFFF','--field-line':'#DDE5DC',
+      '--title-ink':'#17231D','--sub-ink':'#5A6960','--field-ink':'#17231D','--placeholder':'#9AA69D',
+      '--user-bubble':'#E5EDE3','--user-bubble-ink':'#17231D','--ai-bubble':'#FFFFFF','--ai-bubble-line':'#DDE5DC','--ai-bubble-ink':'#17231D',
+      '--chip-bg':'#FFFFFF','--chip-line':'#DDE5DC','--chip-ink':'#3C4A41',
+      '--anon-bg':'rgba(47,107,79,.12)','--anon-ink':'#5A6960',
+      '--send-bg':'#2F6B4F','--send-bg-press':'#27593F','--send-disabled':'#B8C8BC',
+      '--foot-ink':'#5A6960','--statusbar-ink':'#17231D','--risk-line-opacity':'.8'
+    }},
+    night:{vars:{
+      '--canvas':'#10221B','--field-bg':'#16291F','--field-line':'rgba(255,255,255,.10)',
+      '--title-ink':'#EAF1EB','--sub-ink':'#9DB3A4','--field-ink':'#EAF1EB','--placeholder':'#6E8576',
+      '--user-bubble':'rgba(255,255,255,.06)','--user-bubble-ink':'#EAF1EB',
+      '--ai-bubble':'#16291F','--ai-bubble-line':'rgba(255,255,255,.10)','--ai-bubble-ink':'#EAF1EB',
+      '--chip-bg':'rgba(255,255,255,.05)','--chip-line':'rgba(255,255,255,.12)','--chip-ink':'#CADCCF',
+      '--anon-bg':'rgba(111,163,122,.16)','--anon-ink':'#9DB3A4',
+      '--send-bg':'#6FA37A','--send-bg-press':'#5E8E6A','--send-disabled':'#3A4A40',
+      '--foot-ink':'#8AA193','--statusbar-ink':'#EAF1EB','--risk-line-opacity':'.95'
+    }}
+  };
+  function applyTod(key){
+    var t = TOD[key] || TOD.day;
+    // 先清掉所有时段变量，避免残留
+    TOD_VARS.forEach(function(v){ phone.style.removeProperty(v); });
+    Object.keys(t.vars).forEach(function(k){ phone.style.setProperty(k, t.vars[k]); });
+  }
+  function autoTod(){
+    var h = new Date().getHours();
+    if(h>=5 && h<11) return 'morning';
+    if(h>=11 && h<17) return 'day';
+    if(h>=17 && h<22) return 'evening';
+    return 'night';
+  }
+  function getTodOverride(){
+    var m = location.search.match(/[?&]tod=(auto|morning|day|evening|night)/);
+    return m ? m[1] : null;
+  }
+  var todOverride = getTodOverride();
+  applyTod(todOverride || autoTod());
+
+  /* nav-back 点击返回首页（= 新对话入口） */
+  var navBack = document.querySelector('.nav-back');
+  if (navBack) {
+    navBack.addEventListener('click', function(){ location.href='home.html'; });
+    navBack.addEventListener('keydown', function(e){
+      if (e.key==='Enter' || e.key===' ') { e.preventDefault(); location.href='home.html'; }
+    });
+  }
+
+  /* 时段切换器（设计演示用）：长按 nav-title 1.5s 弹出，点空白/ESC 关闭 */
+  var todSwitcher = document.getElementById('tod-switcher');
+  var navTitleEl = document.querySelector('.nav-title');
+  var pressTimer = null;
+  function showTodSwitcher(){
+    if (!todSwitcher) return;
+    todSwitcher.classList.add('show');
+    var cur = todOverride || 'auto';
+    todSwitcher.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('active', b.dataset.tod === cur);
+    });
+  }
+  function hideTodSwitcher(){
+    if (todSwitcher) todSwitcher.classList.remove('show');
+  }
+  if (navTitleEl) {
+    navTitleEl.addEventListener('pointerdown', function(){ pressTimer = setTimeout(showTodSwitcher, 1500); });
+    navTitleEl.addEventListener('pointerup', function(){ clearTimeout(pressTimer); });
+    navTitleEl.addEventListener('pointerleave', function(){ clearTimeout(pressTimer); });
+  }
+  if (todSwitcher) {
+    todSwitcher.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      var tod = b.dataset.tod;
+      var url = new URL(location.href);
+      if (tod === 'auto') { url.searchParams.delete('tod'); todOverride = null; }
+      else { url.searchParams.set('tod', tod); todOverride = tod; }
+      history.replaceState(null, '', url);
+      applyTod(tod === 'auto' ? autoTod() : tod);
+      todSwitcher.querySelectorAll('button').forEach(function(btn){
+        btn.classList.toggle('active', btn.dataset.tod === tod);
+      });
+    });
+  }
+  document.addEventListener('click', function(e){
+    if (!todSwitcher || !todSwitcher.classList.contains('show')) return;
+    if (!todSwitcher.contains(e.target) && (!navTitleEl || !navTitleEl.contains(e.target))) {
+      hideTodSwitcher();
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && todSwitcher && todSwitcher.classList.contains('show')) {
+      hideTodSwitcher();
+    }
+  });
+
+  /* ============================================================
+     riskLevel 四档状态机（优先级 1）+ 反依赖四层（优先级 2）
+     —— DEMO 桩：生产态 riskLevel 由 aiGateway 云端判定，客户端不持有触发词表 ——
+     状态机规则（记给 ai-prompt-spec.md）：
+       none ⇄ low ⇄ medium → high → 过渡 → none/low
+       high 后禁止直接 medium/low，必须经过渡态复位
+       high 命中时 sessionMeta.riskActive=true，反依赖提示静默
+     反依赖四层（product-definition.md §7，关系式劝离，非时长闸门）：
+       层一 单次善终：会话 ~40-50min 或善尾信号 → 善终人格，不锁输入
+       层二 当日频次：当日第3次打开 → opening 追加承认行，不显示数字
+       层三 跨日重度：连续4天×每天3次 → AI 回复前置关怀语，终身一次
+       层四 危机豁免：riskActive 时层一二三全静默
+     反依赖数据客户端 localStorage，不上传服务端（匿名性 + phase-1 边界）
+     ============================================================ */
+  var sessionMeta = {
+    riskActive: false,          // P1：high 静默钩子
+    highCount: 0,               // P1：high 标题迭代计数
+    sessionStartAt: Date.now(), // P2 层一：本次会话开始时间戳
+    dayCount: 0,                // P2 层二：当日会话打开次数
+    lastSessionAt: null,        // P2：上次会话时间戳（跨日判定）
+    lastSessionDate: null,      // P2：上次会话日期字符串 YYYY-MM-DD
+    consecutiveDays: 0,         // P2 层三：连续高频天数
+    crossDayCareShown: false,   // P2 层三：终身一次标记
+    graceShown: false,          // P2 层一：本次会话善终已显示
+    transitionThisSession: false// P2：当次会话是否经历过 high 过渡
+  };
+
+  // —— 反依赖数据本地持久化（per 匿名设备，不上传服务端）——
+  var STORE_KEY = 'xkssv2:anti-dep';
+  function loadAntiDep(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return;
+      var d = JSON.parse(raw);
+      sessionMeta.dayCount = d.dayCount||0;
+      sessionMeta.lastSessionAt = d.lastSessionAt||null;
+      sessionMeta.lastSessionDate = d.lastSessionDate||null;
+      sessionMeta.consecutiveDays = d.consecutiveDays||0;
+      sessionMeta.crossDayCareShown = d.crossDayCareShown||false;
+    }catch(_){}
+  }
+  function saveAntiDep(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        dayCount: sessionMeta.dayCount,
+        lastSessionAt: sessionMeta.lastSessionAt,
+        lastSessionDate: sessionMeta.lastSessionDate,
+        consecutiveDays: sessionMeta.consecutiveDays,
+        crossDayCareShown: sessionMeta.crossDayCareShown
+      }));
+    }catch(_){}
+  }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function isYesterday(dateStr){
+    if(!dateStr) return false;
+    var y=new Date(); y.setDate(y.getDate()-1);
+    return dateStr===(y.getFullYear()+'-'+(y.getMonth()+1)+'-'+y.getDate());
+  }
+  // 会话打开时更新频次/跨日计数
+  function onSessionOpen(){
+    var today = todayStr();
+    if(sessionMeta.lastSessionDate === today){
+      // 同一天再次打开
+      sessionMeta.dayCount = (sessionMeta.dayCount||0) + 1;
+    } else {
+      // 新的一天
+      if(isYesterday(sessionMeta.lastSessionDate)){
+        // 连续天数：昨日有会话且昨日 dayCount>=3 才算"高频日"
+        // 简化：只要昨日有打开就算连续，但层三触发另需 dayCount>=3
+        sessionMeta.consecutiveDays = (sessionMeta.consecutiveDays||0) + 1;
+      } else {
+        sessionMeta.consecutiveDays = 1;
+      }
+      sessionMeta.dayCount = 1;
+      sessionMeta.lastSessionDate = today;
+    }
+    sessionMeta.lastSessionAt = Date.now();
+    saveAntiDep();
+  }
+  loadAntiDep();
+  onSessionOpen();
+
+  // —— 文案库（短、安静、不说教）——
+  var REPLIES = [
+    "听到了。你愿意写下来，已经是在好好对待自己。\n这一句先放在这里，不用急着想明白。",
+    "嗯，我在。你说的这些，听起来确实压了挺久。\n如果愿意，可以再多讲一点；不愿意，停在这里也好。"
+  ];
+  // medium：内嵌轻量现实检验（不贴标签，融在陪伴文案里）
+  var REPLIES_MEDIUM = [
+    "听到了。这种时候确实很难一个人扛。\n如果你愿意，可以再多讲一点；也可以想想，现实里有没有一个人，哪怕一个，能听你说说这句。",
+    "嗯，我在。你说的这些压了挺久。\n先放在这里。如果哪天想找现实里信任的人说说，那也很好——不用今天，也不用现在。"
+  ];
+  var LONG_REPLY =
+    "我听到了。你描述的那种「明明很累，却怎么也睡不着」的感觉，很多人都经历过，它不是你不够努力。\n\n" +
+    "有时候身体停下来了，脑子却还在反复回放白天的事。这不代表你出了问题，更多是它一时没找到松开的方式。\n\n" +
+    "如果此刻不想做任何事，那就先什么都不做，让这一句话替你说出来，已经足够。等你想继续，我都在。";
+
+  // —— 反依赖文案 ——
+  // 层一 善终人格（温柔收束，不挽留，不锁输入）
+  var GRACE_REPLY =
+    "这一程先到这里。\n你愿意把它说出来，已经是好好对待自己了。\n如果哪天想找现实里信任的人说说，那也很好——不用今天，也不用现在。";
+  var GRACE_ACK = "嗯，我先收着。你随时可以再来。";
+  // 层三 跨日关怀语（前置，终身一次，"只说一次"自我约束）
+  var CROSSDAY_PREFIX =
+    "我注意到你这几天常来。能陪你说话，我不推辞。\n只是也想说一句：如果这种状态持续，让现实里的人或专业帮助也参与进来，会比我一个人陪你更稳。这句话我只说一次，之后不会再提。";
+
+  /* DEMO 桩 —— 生产态由 aiGateway 判定，客户端不持有触发词表 */
+  var PAT_HIGH = /(不想活|活不下去|结束生命|自杀|轻生|不想醒来|撑不下去了|想死)/;
+  var PAT_MEDIUM = /(一个人扛|没人能说|太孤独了|撑不住|谁也|没人懂)/;
+  function mockRiskLevel(text){
+    // 状态机单向收口：riskActive 时只允许 high 或过渡，禁直接 medium/low
+    if(sessionMeta.riskActive){
+      // high 之后，若用户表达"好一点"则进过渡复位；否则维持 high 语义
+      if(/(好一点|好些了|谢谢|没事了|缓过来)/.test(text)) return 'transition';
+      if(PAT_HIGH.test(text)) return 'high';
+      return 'transition'; // high 后非高风险表达，走过渡复位
+    }
+    if(PAT_HIGH.test(text)) return 'high';
+    if(PAT_MEDIUM.test(text)) return 'medium';
+    if(/(有点累|有点闷|不开心|烦躁|委屈)/.test(text)) return 'low';
+    return 'none';
+  }
+
+  function auto(){
+    input.style.height='auto';
+    input.style.height=Math.min(input.scrollHeight,104)+'px';
+    var has=input.value.trim().length>0;
+    send.disabled=!has;
+    send.classList.toggle('armed',has);
+  }
+  input.addEventListener('input',auto);
+  input.addEventListener('focus',function(){composer.classList.add('focused')});
+  input.addEventListener('blur',function(){composer.classList.remove('focused')});
+
+  function scrollEnd(){ stream.scrollTop = stream.scrollHeight; }
+
+  function setRiskActive(on){
+    sessionMeta.riskActive = on;
+    phone.classList.toggle('risk-active', on);
+  }
+
+  function clearDynamic(){
+    Array.prototype.slice.call(stream.querySelectorAll('[data-dyn]')).forEach(function(n){n.remove()});
+    if(slowTimer){clearTimeout(slowTimer);slowTimer=null;}
+    if(thinkTimer){clearTimeout(thinkTimer);thinkTimer=null;}
+  }
+
+  function addUser(text){
+    var m=document.createElement('div');
+    m.className='msg user';m.setAttribute('data-dyn','1');
+    m.innerHTML='<div class="bubble"></div><span class="meta">刚刚</span>';
+    m.querySelector('.bubble').textContent=text;
+    stream.appendChild(m);scrollEnd();
+    return m;
+  }
+
+  function addThinking(){
+    var t=document.createElement('div');
+    t.className='thinking';t.setAttribute('data-dyn','1');
+    t.innerHTML=
+      '<div class="think-row"><span class="think-dots"><i></i><i></i><i></i></span>'+
+      '<span class="think-label">正在认真读你说的话…</span></div>'+
+      '<div class="slow-hint"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="flex:0 0 auto;margin-top:1px"><circle cx="7.5" cy="7.5" r="6" stroke="#B9894B" stroke-width="1.2"/><path d="M7.5 4.3v3.4l2.1 1.3" stroke="#B9894B" stroke-width="1.2" stroke-linecap="round"/></svg>'+
+      '<span>好像有点慢，可以稍后重试。<span class="retry" data-retry>重试</span></span></div>';
+    stream.appendChild(t);scrollEnd();
+    return t;
+  }
+
+  // 普通回复（none/low/medium）—— 带 followups chip
+  function addReply(text){
+    var m=document.createElement('div');
+    m.className='msg ai';m.setAttribute('data-dyn','1');
+    var paras=text.split('\n\n').map(function(p){
+      return '<p>'+p.replace(/\n/g,'<br>')+'</p>';
+    }).join('');
+    m.innerHTML=
+      '<div class="bubble">'+paras+'</div>'+
+      '<div class="followups">'+
+        '<button class="chip" data-fu="more"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M6.5 2v9" stroke="#6FA37A" stroke-width="1.3" stroke-linecap="round"/></svg>继续聊</button>'+
+        '<button class="chip" data-fu="angle"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 8.5a4.5 4.5 0 1 1 1.3 2.6" stroke="#6FA37A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 8.5h2.4v2.4" stroke="#6FA37A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>换个角度</button>'+
+        '<button class="chip calm" data-fu="better">我现在好一点了</button>'+
+      '</div>'+
+      '<span class="meta"><span class="mk"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1.2c1.4 1.2 1.4 1.2 2.9 1.2 0 2.4-.9 4.4-2.9 5.4-2-1-2.9-3-2.9-5.4 1.5 0 1.5 0 2.9-1.2Z" fill="#2F6B4F"/></svg></span>陪你整理的回应</span>';
+    stream.appendChild(m);scrollEnd();
+    return m;
+  }
+
+  // 过渡态回复（high 之后）—— 无 followups chip，不邀请行动
+  function addTransitionReply(text){
+    var m=document.createElement('div');
+    m.className='msg ai';m.setAttribute('data-dyn','1');
+    var paras=text.split('\n\n').map(function(p){
+      return '<p>'+p.replace(/\n/g,'<br>')+'</p>';
+    }).join('');
+    m.innerHTML=
+      '<div class="bubble">'+paras+'</div>'+
+      '<span class="meta"><span class="mk"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1.2c1.4 1.2 1.4 1.2 2.9 1.2 0 2.4-.9 4.4-2.9 5.4-2-1-2.9-3-2.9-5.4 1.5 0 1.5 0 2.9-1.2Z" fill="#2F6B4F"/></svg></span>陪你整理的回应</span>';
+    stream.appendChild(m);scrollEnd();
+    return m;
+  }
+
+  function addError(text){
+    var e=document.createElement('div');
+    e.className='errorbar show';e.setAttribute('data-dyn','1');
+    e.innerHTML=
+      '<span class="eb-ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2 1.5 17h17L10 2Z" stroke="#B9894B" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v4M10 14.3v.2" stroke="#B9894B" stroke-width="1.5" stroke-linecap="round"/></svg></span>'+
+      '<div class="eb-body"><p class="eb-title">这条没能发出去</p><p class="eb-sub">网络好像断了一下。你的输入还在，可以再试一次。</p></div>'+
+      '<button class="eb-retry" data-retry>重试</button>';
+    stream.appendChild(e);scrollEnd();
+    return e;
+  }
+
+  // high 卡：陪聊人格让位安全协议
+  // —— 标题随 highCount 微迭代：第一次"先停一下"，第二次起"我还在" ——
+  function addRisk(){
+    sessionMeta.highCount += 1;
+    var title = sessionMeta.highCount === 1
+      ? '先停一下，这一刻你不该一个人扛'
+      : '我还在，这一刻仍不该一个人扛';
+    var r=document.createElement('div');
+    r.className='risk show';r.setAttribute('data-dyn','1');
+    r.innerHTML=
+      '<div class="rk-head"><span class="rk-ic"><svg width="19" height="19" viewBox="0 0 19 19" fill="none"><path d="M9.5 2.5C6 4 4 4.3 4 4.3v5c0 3.5 2.6 5.6 5.5 6.7 2.9-1.1 5.5-3.2 5.5-6.7v-5s-2-.3-5.5-1.8Z" stroke="#B9894B" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 7v3" stroke="#B9894B" stroke-width="1.5" stroke-linecap="round"/><circle cx="9.5" cy="12" r=".7" fill="#B9894B"/></svg></span><span class="rk-t">'+title+'</span></div>'+
+      '<p class="rk-body">你刚才说的让我有点担心你。<strong>我能陪你说话，但我没办法在现实里帮到你。</strong>如果此刻很难熬，请试着联系一个你信任的人，或身边的专业帮助——哪怕只是先告诉对方「我现在不太好」。</p>'+
+      '<div class="rk-actions">'+
+        '<button class="rk-btn primary" data-fu="reach">联系一个我信任的人</button>'+
+        '<button class="rk-btn ghost" data-fu="stay">我先待一会儿</button>'+
+      '</div>'+
+      '<p class="rk-note">这不是诊断，也不是评判。你愿意留下来说话，我一直在。</p>';
+    stream.appendChild(r);scrollEnd();
+    return r;
+  }
+
+  // —— 发送主流程：按 riskLevel 分支 + 反依赖协同 ——
+  function doSend(){
+    var text=input.value.trim();
+    if(!text){ showNudge(); return; }
+    clearDynamic();
+    opening.style.display='none';
+    // 善终后用户继续输入：清除善终态，恢复正常陪伴（劝离不等于拦截）
+    if(sessionMeta.graceShown){
+      sessionMeta.graceShown = false;
+      input.placeholder='写下一句现在最想说的话';
+    }
+    var level = mockRiskLevel(text);
+    addUser(text);
+    input.value='';auto();
+
+    var think=addThinking();
+    slowTimer=setTimeout(function(){
+      var sh=think.querySelector('.slow-hint'); if(sh) sh.classList.add('show'); scrollEnd();
+    },15000);
+
+    var wait=prefersReduced?500:1500;
+    thinkTimer=setTimeout(function(){
+      think.remove();
+      if(slowTimer){clearTimeout(slowTimer);slowTimer=null;}
+      applyLevel(level, text);
+    },wait);
+  }
+
+  // —— riskLevel 分支渲染 + 反依赖四层协同 ——
+  function applyLevel(level, userText){
+    // high 优先级最高，反依赖全静默
+    if(level === 'high'){
+      setRiskActive(true);
+      sessionMeta.transitionThisSession = false; // 新的 high，重置过渡标记
+      addRisk();
+      return;
+    }
+    // 过渡态：high 复位，标记当次会话已过渡（层二三当次静默，层一仍可）
+    if(level === 'transition'){
+      setRiskActive(false);
+      sessionMeta.transitionThisSession = true;
+      addTransitionReply("嗯，谢谢你告诉我。\n刚才那一段不轻易。我还在，你愿意说就说，不想说也行。");
+      return;
+    }
+    // none/low/medium 路径：检查反依赖层一善终（危机豁免已在内）
+    if(graceDue(userText)){
+      addGraceReply();
+      return;
+    }
+    // 层三跨日关怀语前置（终身一次）
+    var prefix = crossDayCareDue() ? CROSSDAY_PREFIX + '\n\n' : '';
+    if(prefix) markCrossDayCareShown();
+
+    switch(level){
+      case 'medium':
+        addReply(prefix + REPLIES_MEDIUM[Math.floor(Math.random()*REPLIES_MEDIUM.length)]);
+        break;
+      case 'low':
+      case 'none':
+      default:
+        addReply(prefix + REPLIES[Math.floor(Math.random()*REPLIES.length)]);
+        break;
+    }
+  }
+
+  send.addEventListener('click',doSend);
+  input.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSend();}
+  });
+
+  var nudgeTimer=null;
+  function showNudge(){
+    nudge.classList.add('show');
+    composer.classList.add('focused');
+    if(nudgeTimer)clearTimeout(nudgeTimer);
+    nudgeTimer=setTimeout(function(){nudge.classList.remove('show')},2600);
+  }
+
+  // —— 后续动作 / 重试 / 风险动作（事件委托）——
+  stream.addEventListener('click',function(e){
+    var fu=e.target.closest('[data-fu]');
+    var rt=e.target.closest('[data-retry]');
+    if(rt){
+      clearDynamic();
+      var think=addThinking();
+      thinkTimer=setTimeout(function(){think.remove();addReply(REPLIES[0]);},prefersReduced?400:1200);
+      return;
+    }
+    if(fu){
+      var k=fu.getAttribute('data-fu');
+      if(k==='grace-keep'){
+        // 层一善终"我先收着"：AI 确认收着，不锁输入，用户仍可继续
+        var gm=document.createElement('div');
+        gm.className='msg ai';gm.setAttribute('data-dyn','1');
+        gm.innerHTML='<div class="bubble"><p>'+GRACE_ACK+'</p></div>';
+        stream.appendChild(gm);scrollEnd();
+        // placeholder 临时切为"下次想说了，再来"（语义收束，不锁输入）
+        input.placeholder='下次想说了，再来';
+        return;
+      }
+      if(k==='better'){
+        clearDynamic();
+        var m=document.createElement('div');
+        m.className='msg ai';m.setAttribute('data-dyn','1');
+        // medium 善尾时轻提现实引导
+        var tail = sessionMeta.riskActive ? '' : '\n如果哪天想找现实里的人说说，那也很好。';
+        m.innerHTML='<div class="bubble"><p>那就好。你随时可以再回来——这里一直在。'+tail+'</p></div>';
+        stream.appendChild(m);scrollEnd();
+      } else if(k==='stay'){
+        // high 卡"我先待一会儿"：承认暂时留下，不给长期陪伴暗示
+        var s=document.createElement('div');
+        s.className='msg ai';s.setAttribute('data-dyn','1');
+        s.innerHTML='<div class="bubble"><p>好，我在。不用说什么，待着也可以。</p></div>';
+        stream.appendChild(s);scrollEnd();
+      } else if(k==='reach'){
+        var rr=document.createElement('div');
+        rr.className='msg ai';rr.setAttribute('data-dyn','1');
+        rr.innerHTML='<div class="bubble"><p>嗯，去找那个人吧。如果一时开不了口，发一句「我现在有点不好」也算。我在这里等你回来。</p></div>';
+        stream.appendChild(rr);scrollEnd();
+      } else {
+        var think=addThinking();
+        thinkTimer=setTimeout(function(){
+          think.remove();
+          addReply(k==='angle'
+            ? "换个角度看——也许现在需要的不是「解决」，只是「被听见」。\n这件事可以慢慢来，今晚先到这里也行。"
+            : "好，我接着听。你想从哪一点再说说？哪怕是最小的一件，也可以。");
+        },prefersReduced?400:1200);
+      }
+      return;
+    }
+  });
+
+  // —— Bottom sheet ——
+  function openSheet(){scrim.classList.add('show');sheet.classList.add('show');}
+  function closeSheet(){scrim.classList.remove('show');sheet.classList.remove('show');}
+  document.getElementById('open-privacy').addEventListener('click',openSheet);
+  document.getElementById('close-privacy').addEventListener('click',closeSheet);
+  scrim.addEventListener('click',closeSheet);
+
+  // —— 清除确认 ——
+  function openConfirm(){confirm.classList.add('show');}
+  function closeConfirm(){confirm.classList.remove('show');}
+  document.getElementById('open-clear').addEventListener('click',function(){closeSheet();openConfirm();});
+  document.getElementById('cf-cancel').addEventListener('click',closeConfirm);
+  document.getElementById('cf-scrim').addEventListener('click',closeConfirm);
+  document.getElementById('cf-ok').addEventListener('click',function(){
+    clearDynamic();opening.style.display='';setRiskActive(false);sessionMeta.highCount=0;closeConfirm();
+  });
+
+  /* ============================================================
+     反依赖四层渲染（优先级 2）
+     —— 关系式劝离，非时长闸门；无 streak/召回/留人 ——
+     ============================================================ */
+
+  // 层二：当日频次觉察 —— opening 追加承认行（仅第3次起，不显示数字，riskActive 静默）
+  function renderFrequencyNotice(){
+    var el = document.getElementById('om-freq');
+    if(!el) return;
+    // 危机豁免 / 过渡态当次会话 → 静默
+    if(sessionMeta.riskActive || sessionMeta.transitionThisSession){
+      el.style.display='none'; return;
+    }
+    if(sessionMeta.dayCount >= 3){
+      el.textContent = '今天你来了几次，我一直在。不急着说，也不急着走。';
+      el.style.display='';
+    } else {
+      el.style.display='none';
+    }
+  }
+
+  // 层三：跨日重度关怀 —— 判断是否该前置关怀语（连续4天×每天3次，终身一次）
+  function crossDayCareDue(){
+    if(sessionMeta.riskActive || sessionMeta.transitionThisSession) return false;
+    if(sessionMeta.crossDayCareShown) return false;
+    // 连续天数≥4 且 当日已是第3次（高频日的标志）
+    if(sessionMeta.consecutiveDays >= 4 && sessionMeta.dayCount >= 3) return true;
+    return false;
+  }
+  // 标记层三已显示（终身一次）
+  function markCrossDayCareShown(){
+    sessionMeta.crossDayCareShown = true;
+    saveAntiDep();
+  }
+
+  // 层一：单次善终 —— 判断是否到善终点（时长40-50min 或 善尾信号）
+  var GRACE_MIN_MS = 40*60*1000;  // 40 分钟下限
+  var GRACE_MAX_MS = 50*60*1000;  // 50 分钟上限
+  var PAT_GRACE_SIGNAL = /(好一点|好些了|谢谢你|先这样|就这些|说完了|先到这里|收着了|没事了|缓过来)/;
+  function graceDue(userText){
+    if(sessionMeta.riskActive) return false; // 危机豁免
+    if(sessionMeta.graceShown) return false; // 本次会话已善终
+    var elapsed = Date.now() - sessionMeta.sessionStartAt;
+    // 时长到 40-50min 区间，且用户当前不在输入（简化：直接触发）
+    if(elapsed >= GRACE_MIN_MS && elapsed <= GRACE_MAX_MS) return true;
+    // 善尾信号
+    if(userText && PAT_GRACE_SIGNAL.test(userText)) return true;
+    return false;
+  }
+
+  // 层一善终回复：善终人格文案 + 仅"我先收着"chip
+  function addGraceReply(){
+    sessionMeta.graceShown = true;
+    var m=document.createElement('div');
+    m.className='msg ai';m.setAttribute('data-dyn','1');
+    var paras=GRACE_REPLY.split('\n\n').map(function(p){
+      return '<p>'+p.replace(/\n/g,'<br>')+'</p>';
+    }).join('');
+    m.innerHTML=
+      '<div class="bubble">'+paras+'</div>'+
+      '<div class="followups">'+
+        '<button class="chip calm" data-fu="grace-keep">我先收着</button>'+
+      '</div>'+
+      '<span class="meta"><span class="mk"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1.2c1.4 1.2 1.4 1.2 2.9 1.2 0 2.4-.9 4.4-2.9 5.4-2-1-2.9-3-2.9-5.4 1.5 0 1.5 0 2.9-1.2Z" fill="#2F6B4F"/></svg></span>陪你整理的回应</span>';
+    stream.appendChild(m);scrollEnd();
+    return m;
+  }
+
+  // 层一时长检查：每 30s 检查一次，到区间且当前无 thinking/dynamic 则插入善终
+  var graceTimer = setInterval(function(){
+    if(sessionMeta.riskActive || sessionMeta.graceShown) return;
+    var elapsed = Date.now() - sessionMeta.sessionStartAt;
+    if(elapsed >= GRACE_MIN_MS && elapsed <= GRACE_MAX_MS){
+      // 当前会话流里有动态内容才善终（避免空会话也弹）
+      if(stream.querySelector('[data-dyn]')){
+        // 若正在思考，等思考完再善终
+        if(!stream.querySelector('.thinking')){
+          clearDynamic();
+          addGraceReply();
+        }
+      }
+    }
+  }, 30000);
+
+  // 初始化：渲染层二承认行
+  renderFrequencyNotice();
+
+  auto();
+})();
+</script>
+</body>
+</html>

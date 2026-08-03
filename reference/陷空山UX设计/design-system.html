@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>陷空山 · 设计系统说明</title>
+<style>
+  :root{
+    --bg:#F7FAF6; --surface:#FFFFFF; --soft:#EEF5EE;
+    --ink:#17231D; --muted:#66756A; --sage:#6FA37A; --deep:#2F6B4F;
+    --notice:#B9894B; --danger:#B85C5C;
+    --line:#E2EAE2; --line-soft:#EDF2ED; --ink-2:#3C4A41;
+    --sage-wash:rgba(111,163,122,.10);
+    --r-card:8px;
+    --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:56px 22px 96px}
+
+  header{margin-bottom:48px}
+  .eyebrow{font-size:12px;letter-spacing:.18em;color:var(--sage);font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--sage)}
+  h1{font-size:30px;font-weight:600;letter-spacing:.01em;margin-bottom:10px}
+  .lede{font-size:15.5px;color:var(--muted);max-width:54ch}
+
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:28px}
+  .back:hover{color:var(--deep)}
+
+  section{margin-bottom:46px}
+  .sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .sec-n{font-family:var(--mono);font-size:12px;color:var(--sage);letter-spacing:.06em}
+  .sec-t{font-size:19px;font-weight:600;letter-spacing:.01em}
+
+  /* 颜色 */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .sw{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+  .sw .chip{height:62px;border-bottom:1px solid var(--line-soft)}
+  .sw .meta{padding:10px 12px}
+  .sw .nm{font-size:13.5px;font-weight:600;margin-bottom:2px}
+  .sw .hex{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+  .sw .use{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+
+  .ratio{margin-top:16px;font-size:13px;color:var(--ink-2);background:var(--soft);border-radius:var(--r-card);padding:13px 15px;line-height:1.6}
+  .ratio strong{color:var(--deep)}
+
+  /* 字体 */
+  .type-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+  .type-row:last-child{border-bottom:0}
+  .type-spec{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .t-display{font-size:21px;font-weight:600}
+  .t-title{font-size:17px;font-weight:600}
+  .t-body{font-size:15.5px}
+  .t-sub{font-size:14px;color:var(--ink-2)}
+  .t-label{font-size:12px;letter-spacing:.06em;color:var(--muted)}
+
+  /* 间距 / 圆角 */
+  .scale-list{display:flex;flex-direction:column;gap:10px}
+  .scale-item{display:flex;align-items:center;gap:14px}
+  .scale-item .bar{height:14px;background:var(--sage-wash);border-radius:3px}
+  .scale-item .lab{font-family:var(--mono);font-size:12px;color:var(--ink-2);min-width:120px}
+
+  /* 组件 */
+  .cmp-grid{display:grid;gap:14px}
+  .cmp{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:16px}
+  .cmp .ct{font-size:13.5px;font-weight:600;margin-bottom:4px}
+  .cmp .cd{font-size:12.5px;color:var(--muted);line-height:1.55}
+
+  .demo-btn{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:0 22px;background:var(--deep);color:#fff;border:0;border-radius:var(--r-card);font-size:15px;font-weight:600;font-family:inherit;margin-top:12px}
+  .demo-chip{display:inline-flex;align-items:center;height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--ink-2);margin-top:12px;background:var(--surface)}
+
+  /* 动效 */
+  .motion-list,.dont-list{display:flex;flex-direction:column;gap:10px}
+  .motion-item{display:flex;gap:11px;font-size:14px;color:var(--ink-2);align-items:flex-start}
+  .motion-item .mk{flex:0 0 auto;width:20px;height:20px;border-radius:6px;background:var(--sage-wash);color:var(--deep);display:grid;place-items:center;margin-top:1px}
+  .motion-item .mk svg{display:block}
+
+  /* 禁用项 */
+  .dont-item{display:flex;gap:11px;font-size:14px;color:var(--ink-2);align-items:flex-start}
+  .dont-item .xk{flex:0 0 auto;width:20px;height:20px;border-radius:6px;background:#F6EAEA;color:var(--danger);display:grid;place-items:center;margin-top:1px;font-size:13px}
+  .dont-item strong{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="home.html">
+      <svg width="9" height="15" viewBox="0 0 9 15" fill="none"><path d="M7.5 1 1.5 7.5l6 6.5" stroke="#66756A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      返回首页
+    </a>
+    <header>
+      <p class="eyebrow"><span class="dot"></span>设计系统说明</p>
+      <h1>陷空山 V2 · 设计规范</h1>
+      <p class="lede">一套服务于「匿名情绪陪伴」的克制系统。所有颜色取自唯一 token 源；其它一切——字体、间距、组件、动效——都在为「安静、可信、被尊重」让路。</p>
+    </header>
+
+    <!-- 颜色 -->
+    <section>
+      <div class="sec-h"><span class="sec-n">01</span><span class="sec-t">颜色</span></div>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#F7FAF6"></div><div class="meta"><p class="nm">Background</p><p class="hex">#F7FAF6</p><p class="use">主背景 · 雾白纸感</p></div></div>
+        <div class="sw"><div class="chip" style="background:#FFFFFF"></div><div class="meta"><p class="nm">Surface</p><p class="hex">#FFFFFF</p><p class="use">气泡 / 卡片面</p></div></div>
+        <div class="sw"><div class="chip" style="background:#EEF5EE"></div><div class="meta"><p class="nm">Soft Surface</p><p class="hex">#EEF5EE</p><p class="use">用户气泡 / 轻强调底</p></div></div>
+        <div class="sw"><div class="chip" style="background:#17231D"></div><div class="meta"><p class="nm">Primary Ink</p><p class="hex">#17231D</p><p class="use">主要正文 / 标题</p></div></div>
+        <div class="sw"><div class="chip" style="background:#66756A"></div><div class="meta"><p class="nm">Muted Text</p><p class="hex">#66756A</p><p class="use">次级说明 / 时间戳</p></div></div>
+        <div class="sw"><div class="chip" style="background:#6FA37A"></div><div class="meta"><p class="nm">Accent Sage</p><p class="hex">#6FA37A</p><p class="use">主强调 · 每屏 ≤2 次</p></div></div>
+        <div class="sw"><div class="chip" style="background:#2F6B4F"></div><div class="meta"><p class="nm">Deep Green</p><p class="hex">#2F6B4F</p><p class="use">主按钮 / 关键文字</p></div></div>
+        <div class="sw"><div class="chip" style="background:#B9894B"></div><div class="meta"><p class="nm">Warm Notice</p><p class="hex">#B9894B</p><p class="use">慢提示 / 风险提醒</p></div></div>
+        <div class="sw"><div class="chip" style="background:#B85C5C"></div><div class="meta"><p class="nm">Danger</p><p class="hex">#B85C5C</p><p class="use">仅破坏性操作（清除）</p></div></div>
+      </div>
+      <p class="ratio"><strong>用色比例：</strong>70–85% 雾白 / 纸感中性面，5–10% 鼠尾草绿作主强调，少量深墨绿用于关键文字与主按钮。绿色不刷屏，风险态用暖褐 Notice 而非报警红，danger 只留给「清除」这类破坏性确认。</p>
+    </section>
+
+    <!-- 字体 -->
+    <section>
+      <div class="sec-h"><span class="sec-n">02</span><span class="sec-t">字体与排版</span></div>
+      <div class="type-row"><span class="t-display">慢慢说，我在这里。</span><span class="type-spec">21px · 600 · 字距 +0.01em</span></div>
+      <div class="type-row"><span class="t-title">隐私与边界</span><span class="type-spec">17–18px · 600 · 标题</span></div>
+      <div class="type-row"><span class="t-body">把现在最想说的一句，先放下来。</span><span class="type-spec">15.5px · 400 · 正文 · 行高 1.62</span></div>
+      <div class="type-row"><span class="t-sub">这不是诊断，只是一段陪你整理情绪的回应。</span><span class="type-spec">14px · 400 · 次级</span></div>
+      <div class="type-row"><span class="t-label">这里只你一个人，匿名</span><span class="type-spec">11–12px · 600 · 标签 · 字距 +0.18em</span></div>
+      <p class="ratio">中文优先，系统无衬线（PingFang SC / 苹方）。字重克制为三档：常规 400 读、半粗 600 强调。<strong>正文不用负字距</strong>；只有小标签可轻微正字距。标题不做营销式巨号 hero。</p>
+    </section>
+
+    <!-- 间距 / 圆角 -->
+    <section>
+      <div class="sec-h"><span class="sec-n">03</span><span class="sec-t">间距与圆角</span></div>
+      <div class="scale-list">
+        <div class="scale-item"><span class="lab">4 / 8 / 12 px</span><span class="bar" style="width:12%"></span><span class="type-spec">元素内紧凑间距</span></div>
+        <div class="scale-item"><span class="lab">16 / 20 px</span><span class="bar" style="width:24%"></span><span class="type-spec">区块边距 · 气泡内距</span></div>
+        <div class="scale-item"><span class="lab">24 / 32 px</span><span class="bar" style="width:40%"></span><span class="type-spec">区块之间 · 留白呼吸</span></div>
+      </div>
+      <p class="ratio"><strong>圆角：</strong>卡片 / 按钮 8px，气泡 14px，输入区 16px（同侧贴边角收 6px 表达「来自谁」）。<strong>不卡套卡</strong>——一个面里不再嵌第二层卡片。留白本身就是这个产品的主要材料。</p>
+    </section>
+
+    <!-- 组件 -->
+    <section>
+      <div class="sec-h"><span class="sec-n">04</span><span class="sec-t">组件</span></div>
+      <div class="cmp-grid">
+        <div class="cmp"><p class="ct">输入区 Composer</p><p class="cd">底部常驻，圆角 16px，聚焦时鼠尾草描边 + 4px 柔光环。自适应高度，最高 104px。</p><button class="demo-btn" style="height:48px;width:auto">发送 · 48px 触控</button></div>
+        <div class="cmp"><p class="ct">消息气泡</p><p class="cd">用户气泡用 Soft Surface 贴右；AI 气泡用 Surface + 发丝边框贴左，留白充足。最大宽 84%。</p></div>
+        <div class="cmp"><p class="ct">后续动作 Chip</p><p class="cd">回复气泡下方，轻量。「继续聊 / 换个角度 / 我现在好一点了」——不是工具栏，是温柔的下一步。</p><span class="demo-chip">我现在好一点了</span></div>
+        <div class="cmp"><p class="ct">状态条</p><p class="cd">思考 / 慢提示 / 网络错误共用克制的条状容器，暖褐而非红，始终保留用户输入与重试入口。</p></div>
+        <div class="cmp"><p class="ct">隐私边界 Sheet</p><p class="cd">底部抽屉，5 条短句：匿名 / 密钥服务端 / 不用于训练 / 可清除 / 非医疗。只说能做到的，次级入口。</p></div>
+        <div class="cmp"><p class="ct">风险提示</p><p class="cd">克制的左侧暖褐细条 + 两个动作：联系信任的人 / 再待一会儿。不报警刷屏、不制造恐慌。</p></div>
+        <div class="cmp"><p class="ct">清除确认</p><p class="cd">居中弹层，danger 色仅用于「清除」按钮，默认动作是「先留着」。</p></div>
+        <div class="cmp"><p class="ct">时段切换器（设计演示用）</p><p class="cd">长按「陷空山」标题 1.5s 弹出，5 chip（跟随/清晨/白天/傍晚/深夜）。点空白或 ESC 关闭。URL 参数 ?tod= 同效。生产态移除。</p></div>
+      </div>
+    </section>
+
+    <!-- 动效 -->
+    <section>
+      <div class="sec-h"><span class="sec-n">05</span><span class="sec-t">动效</span></div>
+      <div class="motion-list">
+        <div class="motion-item"><span class="mk"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.8 4.3 8 9 2.5" stroke="#2F6B4F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>只用于<strong>状态确认</strong>：发送、思考点呼吸、sheet 升起、弹层缩放。时长 150–300ms，缓动 cubic-bezier(.2,.7,.2,1)。</span></div>
+        <div class="motion-item"><span class="mk"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.8 4.3 8 9 2.5" stroke="#2F6B4F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>思考是<strong>温和呼吸点</strong>，不是无限旋转；超过 15 秒出现「好像有点慢，可以稍后重试」。</span></div>
+        <div class="motion-item"><span class="mk"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.8 4.3 8 9 2.5" stroke="#2F6B4F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>全面尊重 <strong>prefers-reduced-motion</strong>：关闭后动画降到近 0，思考等待也相应缩短。</span></div>
+      </div>
+    </section>
+
+    <!-- 禁用项 -->
+    <section>
+      <div class="sec-h"><span class="sec-n">06</span><span class="sec-t">禁用项</span></div>
+      <div class="dont-list">
+        <div class="dont-item"><span class="xk">✕</span><span>紫蓝渐变、霓虹、玻璃拟态滥用、装饰光球。</span></div>
+        <div class="dont-item"><span class="xk">✕</span><span>emoji 图标——一律用 1.6px 细线 monoline SVG。</span></div>
+        <div class="dont-item"><span class="xk">✕</span><span>满屏绿、过度卡片化、卡片套卡片。</span></div>
+        <div class="dont-item"><span class="xk">✕</span><span>虚构数据指标、营销式巨标题 hero、正文负字距。</span></div>
+        <div class="dont-item"><span class="xk">✕</span><span>夸大承诺：<strong>不写</strong>「端到端加密」「零风险」「绝对安全」。</span></div>
+        <div class="dont-item"><span class="xk">✕</span><span>把「树洞」做成同级主入口；把后续动作做成功能工具栏。</span></div>
+        <div class="dont-item"><span class="xk">✕</span><span>风险态用报警红刷屏、制造恐慌；编造求助热线号码。</span></div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

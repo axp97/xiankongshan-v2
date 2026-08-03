@@ -1,0 +1,566 @@
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+  background: var(--canvas);
+  transition: background 0.3s var(--ease);
+  box-sizing: border-box;
+}
+
+.stream {
+  flex: 1 1 auto;
+  padding: 8px 20px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.stream-anchor {
+  height: 1px;
+}
+
+/* 开场低压入口（设计契约 .opening：kicker 是散排 sage 标签，非 pill） */
+.opening {
+  margin-top: 8px;
+  padding: 6px 2px 2px;
+  display: flex;
+  flex-direction: column;
+}
+.opening .kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: var(--sage);
+}
+.opening .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sage);
+}
+.opening .op-line {
+  display: block;
+  font-size: 21px;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--title-ink);
+  margin-top: 14px;
+}
+.opening .op-sub {
+  display: block;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--sub-ink);
+  margin-top: 6px;
+  max-width: 30ch;
+}
+/* 层二 当日频次觉察：比 op-sub 更轻的承认行 */
+.opening .op-freq {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--sub-ink);
+  margin-top: 10px;
+  max-width: 32ch;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+  border-left: 2px solid var(--field-line);
+  padding-left: 10px;
+}
+
+/* 消息气泡（设计契约 .stream gap:18px / .bubble max-width:84%） */
+.msg {
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+  max-width: 100%;
+}
+.msg .bubble {
+  max-width: 84%;
+  padding: 12px 15px;
+  font-size: 15.5px;
+  line-height: 1.62;
+  letter-spacing: 0.005em;
+  border-radius: var(--r-bubble);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.msg .para + .para {
+  margin-top: 10px;
+}
+.msg .line {
+  display: block;
+}
+.msg .meta {
+  font-size: 11px;
+  color: var(--sub-ink);
+  margin: 7px 4px 0;
+  letter-spacing: 0.04em;
+}
+.msg.user {
+  align-items: flex-end;
+}
+.msg.user .bubble {
+  background: var(--user-bubble);
+  color: var(--user-bubble-ink);
+  border-bottom-right-radius: 6px;
+}
+.msg.ai {
+  align-items: flex-start;
+}
+.msg.ai .bubble {
+  background: var(--ai-bubble);
+  color: var(--ai-bubble-ink);
+  border: 1px solid var(--ai-bubble-line);
+  border-bottom-left-radius: 6px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* AI meta：叶子标记（设计契约 .msg.ai .meta .mk） */
+.msg .ai-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.msg .ai-meta .mk {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--sage-wash);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 后续动作 chip */
+.followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 11px;
+}
+.followups .chip {
+  font-size: 13px;
+  color: var(--chip-ink);
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-line);
+  border-radius: var(--r-pill);
+  padding: 8px 14px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
+}
+.followups .chip.pressed {
+  background: var(--sage-wash);
+  border-color: var(--sage);
+}
+.followups .chip.calm {
+  color: var(--deep);
+  border-color: transparent;
+  background: var(--sage-wash);
+}
+
+/* 思考态：气泡状容器（设计契约 .think-row） */
+.thinking {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 84%;
+}
+.think-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ai-bubble);
+  border: 1px solid var(--ai-bubble-line);
+  border-radius: var(--r-bubble);
+  border-bottom-left-radius: 6px;
+  padding: 13px 16px;
+  box-shadow: var(--shadow-soft);
+  transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.think-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.think-dots .d {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sage);
+  opacity: 0.45;
+  animation: breathe 1.4s var(--ease) infinite;
+}
+.think-dots .d:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.think-dots .d:nth-child(3) {
+  animation-delay: 0.36s;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+.think-label {
+  font-size: 13.5px;
+  color: var(--sub-ink);
+}
+.slow-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--notice);
+  background: var(--notice-wash);
+  border-radius: var(--r-card);
+  padding: 10px 13px;
+}
+.slow-hint .sh-ic {
+  margin-top: 1px;
+}
+.slow-hint .retry {
+  margin-left: 2px;
+  color: var(--deep);
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+/* 风险卡：陪聊人格让位安全协议 */
+.risk {
+  position: relative;
+  align-self: stretch;
+  margin-top: 18px;
+  padding: 16px;
+  background: var(--ai-bubble);
+  border: 1px solid var(--ai-bubble-line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.risk::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--notice);
+  opacity: var(--risk-line-opacity);
+}
+.risk .rk-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.risk .rk-t {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ai-bubble-ink);
+}
+.risk .rk-body {
+  font-size: 14px;
+  line-height: 1.66;
+  color: var(--sub-ink);
+}
+.risk .rk-emph {
+  color: var(--ai-bubble-ink);
+  font-weight: 600;
+}
+.risk .rk-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.risk .rk-btn {
+  min-height: var(--tap);
+  border-radius: var(--r-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.risk .rk-btn.primary {
+  background: var(--send-bg);
+  color: #fff;
+}
+.risk .rk-btn.ghost {
+  background: transparent;
+  color: var(--chip-ink);
+  border: 1px solid var(--chip-line);
+}
+.risk .rk-note {
+  font-size: 12px;
+  color: var(--sub-ink);
+  line-height: 1.55;
+  text-align: center;
+}
+
+/* 网络错误条 */
+.errorbar {
+  display: flex;
+  align-items: flex-start;
+  align-self: stretch;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 13px 15px;
+  background: var(--ai-bubble);
+  border: 1px solid var(--ai-bubble-line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-soft);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.errorbar .eb-ic {
+  margin-top: 1px;
+}
+.errorbar .eb-body {
+  flex: 1;
+}
+.errorbar .eb-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ai-bubble-ink);
+}
+.errorbar .eb-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--sub-ink);
+  line-height: 1.55;
+  margin-top: 3px;
+}
+.errorbar .eb-retry {
+  align-self: center;
+  font-size: 13px;
+  color: var(--deep);
+  padding: 8px 16px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--deep);
+  border-radius: var(--r-pill);
+}
+
+/* 输入坞（设计契约 .dock：canvas 底 + 顶部发丝线） */
+.dock {
+  flex: 0 0 auto;
+  padding: 10px 16px calc(8px + env(safe-area-inset-bottom));
+  background: var(--canvas);
+  border-top: 1px solid var(--field-line);
+  transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.dock-wrap {
+  position: relative;
+}
+/* 空输入温柔提醒：深色浮层贴在 composer 上方（设计契约 .nudge） */
+.nudge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: var(--title-ink);
+  color: var(--canvas);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: var(--r-card);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+  z-index: 5;
+}
+.nudge.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.secondary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 9px;
+  min-height: 20px;
+}
+.hint-treehole {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--foot-ink);
+}
+.privacy-entry {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--foot-ink);
+  padding: 5px 8px;
+  border-radius: var(--r-pill);
+}
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-line);
+  border-radius: 18px;
+  padding: 8px 8px 8px 14px;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease),
+    background 0.3s var(--ease);
+}
+/* 聚焦：sage 描边 + 3px 柔光环（设计契约 .composer.focused） */
+.composer.focused {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px var(--sage-wash);
+}
+.composer .input {
+  flex: 1;
+  min-height: 26px;
+  max-height: 104px;
+  width: 100%;
+  padding: 5px 0;
+}
+.composer .input .taro-textarea {
+  width: 100%;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--field-ink);
+  background: transparent !important;
+}
+.composer .input .taro-textarea::placeholder {
+  color: var(--placeholder);
+}
+/* 发送键：48×48，圆角 14（设计契约 .send，非正圆） */
+.composer .send {
+  flex: 0 0 auto;
+  width: var(--tap);
+  height: var(--tap);
+  min-width: var(--tap);
+  padding: 0;
+  margin: 0;
+  border-radius: 14px;
+  background: var(--send-disabled);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s var(--ease), transform 0.12s var(--ease);
+}
+.composer .send::after {
+  border: none;
+}
+.composer .send.armed {
+  background: var(--send-bg);
+}
+.composer .send.armed:active {
+  transform: translateY(1px);
+  background: var(--send-bg-press);
+}
+
+/* risk-active：输入可用但不邀请——聚焦也不给 sage 描边/柔光环 */
+.chat.risk-active .composer,
+.chat.risk-active .composer.focused {
+  border-color: var(--field-line);
+  box-shadow: none;
+}
+
+/* 清除确认：刻意白底反差，不接时段 token */
+.cf-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 16, 14, 0.34);
+  z-index: 70;
+}
+.confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.confirm .cf-scrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cf-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 32px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px 20px 18px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.cf-t {
+  display: block;
+  font-size: 16.5px;
+  font-weight: 600;
+  color: #17231d;
+}
+.cf-d {
+  display: block;
+  font-size: 13.5px;
+  color: #66756a;
+  line-height: 1.6;
+  margin: 8px 0 18px;
+}
+.cf-actions {
+  display: flex;
+  gap: 10px;
+}
+.cf-cancel {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid #e2eae2;
+  color: #3c4a41;
+  font-size: 14.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cf-ok {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 10px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

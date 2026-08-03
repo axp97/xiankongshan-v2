@@ -1,0 +1,9 @@
+{
+  "name": "aiGateway",
+  "version": "1.0.0",
+  "description": "AI 提供方隔离与响应归一化（DeepSeek）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
