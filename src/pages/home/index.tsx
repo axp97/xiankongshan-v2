@@ -4,10 +4,10 @@ import { useTimeOfDay } from '@/features/theme/useTimeOfDay'
 
 // 页面壳：仅装配时段主题 + 挂载首页功能视图。
 export default function HomePage() {
-  const tod = useTimeOfDay()
+  const { className, tod } = useTimeOfDay()
   return (
-    <View className={tod}>
-      <HomeView />
+    <View className={className}>
+      <HomeView tod={tod} />
     </View>
   )
 }

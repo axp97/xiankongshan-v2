@@ -5,6 +5,8 @@ import { type StreamItem } from './messages'
 import { useChat } from './useChat'
 import { TrustSheet } from '@/features/privacy/TrustSheet'
 import { Icon } from '@/shared/ui/Icon'
+import { placeholderAt } from '@/shared/ui/colorTokens'
+import type { ThemeKey } from '@/shared/ui/spec'
 import * as copy from './copy'
 import './ChatView.scss'
 
@@ -19,9 +21,9 @@ const paragraphs = (text: string) =>
     </View>
   ))
 
-type Props = { seed?: string }
+type Props = { seed?: string; tod: ThemeKey }
 
-export const ChatView = ({ seed }: Props) => {
+export const ChatView = ({ seed, tod }: Props) => {
   const chat = useChat()
   const [text, setText] = useState('')
   const [focused, setFocused] = useState(false)
@@ -66,23 +68,25 @@ export const ChatView = ({ seed }: Props) => {
   return (
     <View className={`chat ${chat.riskActive ? 'risk-active' : ''}`}>
       <ScrollView className="stream" scrollY scrollIntoView={scrollInto} scrollWithAnimation>
-        {chat.showOpening && (
-          <View className="opening">
-            <View className="kicker">
-              <View className="dot" />
-              <Text>{copy.OPENING.kicker}</Text>
+        <View className="stream-inner">
+          {chat.showOpening && (
+            <View className="opening">
+              <View className="kicker">
+                <View className="dot" />
+                <Text>{copy.OPENING.kicker}</Text>
+              </View>
+              <Text className="op-line">{copy.OPENING.line}</Text>
+              <Text className="op-sub">{copy.OPENING.sub}</Text>
+              {chat.frequencyNotice && <Text className="op-freq">{chat.frequencyNotice}</Text>}
             </View>
-            <Text className="op-line">{copy.OPENING.line}</Text>
-            <Text className="op-sub">{copy.OPENING.sub}</Text>
-            {chat.frequencyNotice && <Text className="op-freq">{chat.frequencyNotice}</Text>}
-          </View>
-        )}
+          )}
 
-        {chat.items.map((it) => (
-          <StreamRow key={it.id} item={it} onFollowup={chat.followup} onRetry={chat.retry} />
-        ))}
+          {chat.items.map((it) => (
+            <StreamRow key={it.id} item={it} onFollowup={chat.followup} onRetry={chat.retry} />
+          ))}
 
-        <View id="stream-bottom" className="stream-anchor" />
+          <View id="stream-bottom" className="stream-anchor" />
+        </View>
       </ScrollView>
 
       <View className="dock">
@@ -94,7 +98,7 @@ export const ChatView = ({ seed }: Props) => {
               <Text>以后也可以把心事放进树洞</Text>
             </View>
             <View className="privacy-entry" onClick={() => setSheetOpen(true)}>
-              <Icon name="shieldCheck" size={13} color="var(--foot-ink)" />
+              <Icon name="shieldCheck" size={13} color="var(--foot-ink)" tod={tod} />
               <Text>隐私与边界</Text>
             </View>
           </View>
@@ -103,6 +107,7 @@ export const ChatView = ({ seed }: Props) => {
               className="input"
               value={text}
               placeholder={copy.COMPOSER.placeholder}
+              placeholderStyle={`color: ${placeholderAt(tod)}`}
               autoHeight
               maxlength={-1}
               adjustPosition
@@ -110,7 +115,7 @@ export const ChatView = ({ seed }: Props) => {
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
             />
-            <Button className={`send ${text.trim() ? 'armed' : ''}`} disabled={!text.trim()} onClick={submit}>
+            <Button className="send" disabled={!text.trim()} onClick={submit}>
               <Icon name="send" size={20} color="#fff" />
             </Button>
           </View>

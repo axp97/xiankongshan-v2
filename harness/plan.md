@@ -26,6 +26,31 @@
 - [x] **B5** 时段主题：深夜 palette 对齐 chat.html（ai-bubble `#16291F`、send→sage、risk-line `.95`）
 - [x] **B6** 多视口防溢出（overflow-x / word-break / secondary-row flex）
 
+## Stage B7 · UI 规范沉淀 + weapp 运行时保真（P0 质量）— 负责：我 ✅
+
+> 规格唯一源：`src/domain/ui/spec.ts`；纪律：`harness/rules.md` §9；护栏：`spec.test.ts` 三向交叉（spec ⇔ 契约 HTML ⇔ 实现 scss）常绿。
+
+- [x] **B7-1** 规格沉淀：BASE_TOKENS / 四时段 PALETTES / GEOMETRY，逐字取自契约
+- [x] **B7-2** TDD 三向交叉护栏（19 测试，先红后绿）+ colorTokens 行为测试
+- [x] **B7-3** 根 token 经 mixin 双发 `:root`+`page`（根因：WXSS 不识 `:root`，真机圆角/阴影/品牌色全失效）
+- [x] **B7-4** Icon 双端：weapp `<image>`+烤色 data-uri（根因：WXSS 不支持 `mask-image`，真机实心方块）；H5 保持 mask
+- [x] **B7-5** 数值对齐：shadow-soft 8/24/.05、op-line 8、nudge 16、slow-hint 30ch、send 基础态绿（删 armed 反转）、TrustSheet 五处
+- [x] **B7-6** placeholder 双端：`placeholderStyle`（weapp）+ `::placeholder`（H5）
+
+## Stage B8 · 真机截图二轮评审收敛（P0 质量）— 负责：我 ✅
+
+> 输入：用户真机截图（home 输入黑字 / chat 横向裁切）。护栏：spec.test.ts 扩收新断言。
+
+- [x] **B8-1** chat 横向裁切：恢复契约 `.stream` flex+gap+`.msg` 84%/align-self；横向 padding 移 `.stream-inner`（weapp scroll-view 吃自身 padding）
+- [x] **B8-2** textarea 文本样式 weapp 不生效（`.taro-textarea` 仅 H5）→ 挂组件节点 `.say`/`.input`（field-ink 黑字修复）
+- [x] **B8-3** 主题收敛两套 day/night（morning≡day 冗余、evening 退役）；契约四套沉淀保留在 spec PALETTES
+- [x] **B8-4** spec 扩收 textareaColor/streamInner/msgMaxWidth 护栏；spec 移 `shared/ui`（分层收敛，消 shared→domain 反依赖）
+
+## Stage B9 · 提交前收敛轮（P0 质量）— 负责：我 ✅
+
+- [x] **B9-1** composer 单行收敛：输入区与发送键等高 `var(--tap)`、文本垂直居中；多行仍贴底对齐（spec 护栏 `composerInputMinHeight/Padding`）
+- [x] **B9-2** 全页终扫：`npm run verify` 全绿，spec 护栏 19/19 常绿；仓库侧 UI 达可提交状态
+
 ## Stage C · 安全与合规底线（P0）— 代码侧 ✅
 
 - [x] **C1** `security.msgSecCheck` 双向检测（生效需你重部署 aiGateway）

@@ -4,7 +4,9 @@ import { View, Text, Textarea, Button } from '@tarojs/components'
 import type { BaseEventOrig, TextareaProps } from '@tarojs/components'
 import { TrustSheet } from '@/features/privacy/TrustSheet'
 import { Icon } from '@/shared/ui/Icon'
+import { placeholderAt } from '@/shared/ui/colorTokens'
 import type { IconName } from '@/shared/ui/icons'
+import type { ThemeKey } from '@/shared/ui/spec'
 import './HomeView.scss'
 
 // 起头词：图标名取自设计契约 home.html .starter .si
@@ -15,7 +17,7 @@ const STARTERS: Array<{ seed: string; label: string; icon: IconName }> = [
   { seed: '我也不知道想说什么，就是有点闷。', label: '不想说话', icon: 'lines' }
 ]
 
-export const HomeView = () => {
+export const HomeView = ({ tod }: { tod: ThemeKey }) => {
   const [text, setText] = useState('')
   const [focused, setFocused] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -47,6 +49,7 @@ export const HomeView = () => {
           className="say"
           value={text}
           placeholder="写下一句现在最想说的话…"
+          placeholderStyle={`color: ${placeholderAt(tod)}`}
           autoHeight
           maxlength={-1}
           onInput={onInput}
@@ -86,7 +89,7 @@ export const HomeView = () => {
         </View>
         <View className="privacy-row">
           <View className="privacy-entry" onClick={() => setSheetOpen(true)}>
-            <Icon name="shieldCheck" size={13} color="var(--foot-ink)" />
+            <Icon name="shieldCheck" size={13} color="var(--foot-ink)" tod={tod} />
             <Text>隐私与边界</Text>
           </View>
         </View>

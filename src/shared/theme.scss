@@ -1,10 +1,11 @@
 /* ============================================================
-   陷空山 V2 · 唯一 token 源（取自 design-system.html）
-   —— 时段无关基础 token 定义在 :root
-   —— 时段相关语义 token 定义在 .tod-* 四套 palette
+   陷空山 V2 · 唯一 token 源（数值规格见 src/domain/ui/spec.ts）
+   —— 根 token 经 mixin 双发 :root（H5）+ page（weapp）：
+      微信 WXSS 不识别 :root，单发会导致圆角/阴影/品牌色在真机全失效
+   —— 时段相关语义 token 定义在 .tod-* 四套 palette（就近覆盖根 token）
    —— 组件只引用语义 token，不直接引用 hex（对齐设计契约）
    ============================================================ */
-:root {
+@mixin root-tokens {
   /* 品牌与状态色（时段无关） */
   --sage: #6fa37a;
   --deep: #2f6b4f;
@@ -23,7 +24,7 @@
   --r-bubble: 14px;
   --r-pill: 999px;
   --tap: 48px;
-  --shadow-soft: 0 1px 2px rgba(23, 35, 29, 0.04), 0 10px 30px rgba(23, 35, 29, 0.06);
+  --shadow-soft: 0 1px 2px rgba(23, 35, 29, 0.04), 0 8px 24px rgba(23, 35, 29, 0.05);
   --shadow-input: 0 2px 4px rgba(23, 35, 29, 0.03), 0 16px 40px rgba(23, 35, 29, 0.07);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
@@ -55,7 +56,17 @@
   --risk-line-opacity: 0.7;
 }
 
-.tod-morning,
+/* H5：:root 命中 */
+:root {
+  @include root-tokens;
+}
+
+/* weapp：WXSS 不识别 :root，根 token 须在 page 双发（spec.test.ts 护栏） */
+page {
+  @include root-tokens;
+}
+
+/* 生产启用两套主题（ACTIVE_THEMES）。契约四套沉淀见 src/shared/ui/spec.ts PALETTES。 */
 .tod-day {
   --canvas: #f7faf6;
   --field-bg: #ffffff;
@@ -80,32 +91,6 @@
   --send-disabled: #c3d2c6;
   --foot-ink: #66756a;
   --risk-line-opacity: 0.7;
-}
-
-.tod-evening {
-  --canvas: #eef2ec;
-  --field-bg: #ffffff;
-  --field-line: #dde5dc;
-  --title-ink: #17231d;
-  --sub-ink: #5a6960;
-  --field-ink: #17231d;
-  --placeholder: #9aa69d;
-  --user-bubble: #e5ede3;
-  --user-bubble-ink: #17231d;
-  --ai-bubble: #ffffff;
-  --ai-bubble-line: #dde5dc;
-  --ai-bubble-ink: #17231d;
-  --chip-bg: #ffffff;
-  --chip-line: #dde5dc;
-  --chip-ink: #3c4a41;
-  --chip-hover: #e5ede3;
-  --anon-bg: rgba(47, 107, 79, 0.12);
-  --anon-ink: #5a6960;
-  --send-bg: #2f6b4f;
-  --send-bg-press: #27593f;
-  --send-disabled: #b8c8bc;
-  --foot-ink: #5a6960;
-  --risk-line-opacity: 0.8;
 }
 
 /* 深夜 A 路线：对齐 chat.html night palette（发送键换 sage，风险条 opacity .95） */

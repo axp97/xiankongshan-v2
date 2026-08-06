@@ -78,3 +78,12 @@
 4. 与文档相矛盾。
 5. 静默扩展范围。
 6. 声明未实现的安全行为。
+
+## 9. UI 规格纪律
+
+`src/shared/ui/spec.ts` 是 UI 数值（token / 几何 / 字阶 / 时段 palette）的唯一源，逐字沉淀自 `reference/陷空山UX设计/` 契约。
+
+1. 改 UI 数值须**先改 spec 与 `spec.test.ts`，再改 scss**；禁止绕过 spec 直改样式数值。
+2. 根 token 在 theme.scss 须经 mixin 双发 `:root`（H5）与 `page`（weapp）——WXSS 不识别 `:root`。
+3. 图标在 weapp 须走 `<image>` + 烤色 data-uri（WXSS 不支持 `mask-image`）；H5 走 mask。
+4. `spec.test.ts` 三向交叉断言（spec ⇔ 契约 HTML ⇔ 实现 scss）必须常绿；红即阻断合并。

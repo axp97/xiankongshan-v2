@@ -11,9 +11,17 @@
 
 .stream {
   flex: 1 1 auto;
-  padding: 8px 20px 14px;
+  /* 横向留白在内层 .stream-inner：weapp scroll-view 会吃掉自身横向 padding */
+  padding: 8px 0 14px;
   overflow-y: auto;
   overflow-x: hidden;
+}
+.stream-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 .stream-anchor {
   height: 1px;
@@ -48,7 +56,7 @@
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--title-ink);
-  margin-top: 14px;
+  margin-top: 8px;
 }
 .opening .op-sub {
   display: block;
@@ -72,12 +80,11 @@
   padding-left: 10px;
 }
 
-/* 消息气泡（设计契约 .stream gap:18px / .bubble max-width:84%） */
+/* 消息气泡（设计契约 .stream gap:18px / .msg max-width:84% / align-self 定位） */
 .msg {
   display: flex;
   flex-direction: column;
-  margin-top: 18px;
-  max-width: 100%;
+  max-width: 84%;
 }
 .msg .bubble {
   max-width: 84%;
@@ -102,6 +109,7 @@
   letter-spacing: 0.04em;
 }
 .msg.user {
+  align-self: flex-end;
   align-items: flex-end;
 }
 .msg.user .bubble {
@@ -110,6 +118,7 @@
   border-bottom-right-radius: 6px;
 }
 .msg.ai {
+  align-self: flex-start;
   align-items: flex-start;
 }
 .msg.ai .bubble {
@@ -168,7 +177,6 @@
 
 /* 思考态：气泡状容器（设计契约 .think-row） */
 .thinking {
-  margin-top: 16px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -231,6 +239,7 @@
   background: var(--notice-wash);
   border-radius: var(--r-card);
   padding: 10px 13px;
+  max-width: 30ch;
 }
 .slow-hint .sh-ic {
   margin-top: 1px;
@@ -247,7 +256,6 @@
 .risk {
   position: relative;
   align-self: stretch;
-  margin-top: 18px;
   padding: 16px;
   background: var(--ai-bubble);
   border: 1px solid var(--ai-bubble-line);
@@ -326,7 +334,6 @@
   align-items: flex-start;
   align-self: stretch;
   gap: 12px;
-  margin-top: 18px;
   padding: 13px 15px;
   background: var(--ai-bubble);
   border: 1px solid var(--ai-bubble-line);
@@ -380,8 +387,8 @@
 /* 空输入温柔提醒：深色浮层贴在 composer 上方（设计契约 .nudge） */
 .nudge {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 16px;
+  right: 16px;
   bottom: calc(100% + 8px);
   background: var(--title-ink);
   color: var(--canvas);
@@ -445,10 +452,15 @@
 }
 .composer .input {
   flex: 1;
-  min-height: 26px;
+  /* 单行与发送键等高 → 垂直居中（spec 收敛裁决）；多行 autoHeight 展开至 104 */
+  min-height: var(--tap);
   max-height: 104px;
   width: 100%;
-  padding: 5px 0;
+  padding: 0;
+  /* 文本样式挂在组件节点（weapp 无 .taro-textarea 内层类；H5 亦命中） */
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--field-ink);
 }
 .composer .input .taro-textarea {
   width: 100%;
@@ -460,7 +472,8 @@
 .composer .input .taro-textarea::placeholder {
   color: var(--placeholder);
 }
-/* 发送键：48×48，圆角 14（设计契约 .send，非正圆） */
+/* 发送键：48×48，圆角 14（设计契约 .send，非正圆）。
+   契约语义：基础态即主色（始终邀请），仅 disabled 灰。 */
 .composer .send {
   flex: 0 0 auto;
   width: var(--tap);
@@ -469,7 +482,7 @@
   padding: 0;
   margin: 0;
   border-radius: 14px;
-  background: var(--send-disabled);
+  background: var(--send-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -478,10 +491,10 @@
 .composer .send::after {
   border: none;
 }
-.composer .send.armed {
-  background: var(--send-bg);
+.composer .send[disabled] {
+  background: var(--send-disabled);
 }
-.composer .send.armed:active {
+.composer .send:not([disabled]):active {
   transform: translateY(1px);
   background: var(--send-bg-press);
 }

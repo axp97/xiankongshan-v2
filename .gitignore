@@ -14,6 +14,7 @@ dist/
 # os / editor
 .DS_Store
 .history/
+.zcode/
 
 # 微信开发者工具配置（含 AppID，属账号标识，勿入库；模板见 project.config.example.json）
 project.config.json

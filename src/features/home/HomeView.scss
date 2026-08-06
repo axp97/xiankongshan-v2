@@ -70,6 +70,10 @@
   width: 100%;
   min-height: 96px;
   max-height: 200px;
+  /* 文本样式挂在组件节点（weapp 无 .taro-textarea 内层类；H5 亦命中） */
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--field-ink);
 }
 .speak .say .taro-textarea {
   width: 100%;
