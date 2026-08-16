@@ -29,10 +29,15 @@ export const createCloudGateway = (): AiGatewayPort => ({
       })
       const reply = toReply(res.result)
       if (!reply) {
+        // 诊断日志：仅进开发者工具/vConsole 控制台，不进 UI、不含对话内容。
+        const code = (res.result as { error?: unknown } | undefined)?.error
+        console.error('[aiGateway] 回应不可归一化:', typeof code === 'string' ? code : 'UNKNOWN_SHAPE')
         return err(appError(ErrorCode.Gateway, '回应格式异常，请稍后再试。', true))
       }
       return ok(reply)
-    } catch {
+    } catch (e) {
+      // 诊断日志：真机排障用（未部署/环境不匹配/网络断都会落到这里），仅本地控制台。
+      console.error('[aiGateway] callFunction 失败:', e)
       return err(appError(ErrorCode.Network, '网络好像断了一下。你的输入还在，可以再试一次。', true))
     }
   }
