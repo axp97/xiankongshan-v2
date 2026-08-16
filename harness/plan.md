@@ -28,7 +28,7 @@
 
 ## Stage B7 · UI 规范沉淀 + weapp 运行时保真（P0 质量）— 负责：我 ✅
 
-> 规格唯一源：`src/domain/ui/spec.ts`；纪律：`harness/rules.md` §9；护栏：`spec.test.ts` 三向交叉（spec ⇔ 契约 HTML ⇔ 实现 scss）常绿。
+> 规格唯一源：`src/shared/ui/spec.ts`（B8-4 自 domain/ui 迁入）；纪律：`harness/rules.md` §9；护栏：`spec.test.ts` 三向交叉（spec ⇔ 契约 HTML ⇔ 实现 scss）常绿。
 
 - [x] **B7-1** 规格沉淀：BASE_TOKENS / 四时段 PALETTES / GEOMETRY，逐字取自契约
 - [x] **B7-2** TDD 三向交叉护栏（19 测试，先红后绿）+ colorTokens 行为测试
@@ -60,9 +60,11 @@
 
 ## Stage D · 发布准备与内测（P1）
 
-- [ ] **D1** 云函数部署 + `DEEPSEEK_API_KEY`（`cloudfunctions/README.md`）— **P0 人工**
-- [ ] **D2** 体验版上传 + 真机冒烟（`harness/checklists/mvp-smoke.md`）— **P0 人工**
-- [ ] **D3** 公开上架合规（企业主体 + 类目 + AIGC 备案）— 非内测必需，后置
+- [~] **D1** 云函数部署 + `DEEPSEEK_API_KEY`（`cloudfunctions/README.md`）- **P0 人工**
+  - 进展（2026-08-08）：开发者工具可跑通；**真机 `callFunction` 失败**（错误卡触发，截图已验）。强烈疑似未「上传并部署到云端」或环境不匹配（开发者工具本地调试可绕过部署）。`cloudGateway.ts` 已加诊断日志区分四类原因（未部署/环境不匹配 vs NO_KEY/PROVIDER）。**待确认**：云开发面板两函数部署状态 + `aiGateway` 环境变量 `DEEPSEEK_API_KEY`。
+- [ ] **D2** 体验版上传 + 真机冒烟（`harness/checklists/mvp-smoke.md`）- **P0 人工**
+  - 进展（2026-08-08）：**真机 UI 已验全对**（home/chat 双页渲染、错误卡逐字对齐契约）；主路径被云侧失败阻断。开发者工具 ≠ 真机：msgSecCheck（C1）在工具内因无 openid 会 skip（`aiGateway/index.js:28` warn），时段主题真机显色、体验版分发隔离（B5）、安全卡真实触发均须真机验。B7/B8 两轮修的恰是真机才暴露的坑。
+- [ ] **D3** 公开上架合规（企业主体 + 类目 + AIGC 备案）- 非内测必需，后置
 - [x] **D4** 冒烟 checklist 已落
 
 ## Stage E · 上线后增量（P2，非 MVP）
@@ -74,6 +76,13 @@
 ## 仓库侧结论
 
 **代码侧生产 MVP（体验版目标）已就绪。** 剩余仅微信/云侧人工步骤，见文末「人工清单」。
+
+### 工程卫生（非 plan 立项，留痕）
+
+- **README v2**（2026-08-16）：按面试战略 E 清单重设计——定位一句 + 分层图 + harness 亮点 + 真机截图（`docs/screenshots/`，含命名与替换约定）+ prompt 红线节 + onboarding（`project.config.example.json` 复制填 AppID）。简历四锚点（AI 陪伴小程序 / prompt 红线设计 / aiGateway / spec 护栏测试）全部在 README 可见、可点、可验。
+- **riskState.test.ts**（2026-08-16）：客户端风险状态机单测（high 让位 / transition 复位 / 常态 normal），补齐「风险四档」测试证据。
+- **全架构评审两轮**（2026-08-16）：第 1 轮简历叙事⇔实物对账，四锚点齐备；第 2 轮全维度扫查——边界/类型/隐私/文档一致性无红旗（存储写入仅 anonId+节律、无对话内容；`.cursor`/CLAUDE.md 纯指针一致），唯一盲点 riskState 已补测。**删项：无**（无死文件）。**人工余项**：GitHub About description（本机 gh 未登录），建议值见会话。
+- **track 链路评审**：经评估**不接入**（2026-08-08）。E2 属 P2 非 MVP；隐私契约已申报「无第三方统计追踪」且 `app.ts` 主动 `traceUser: false`；当前瓶颈在 P0 人工项。将来若接须走方案 B（仅脱敏运维指标、不记对话原文）+ 同步改隐私指引 + 立 plan 项。详见 `harness/memory.md` NEXT。下个窗口勿重开。
 
 ## 人工清单（非必须确认已后置；下列为真正卡顿项）
 
