@@ -1,6 +1,6 @@
 # 陷空山 V2
 
-> **匿名情绪陪伴微信小程序**——放下一句心事，得到一次克制的回应；说完即走，不被挽留、不被画像、不用于训练。
+> **匿名情绪陪伴微信小程序**——放下一句心事，得到一次克制的回应；对话默认不主动持久化，本应用不自行使用对话训练模型或建立服务端用户画像。
 > Taro 4 + React + TypeScript（严格模式）· 微信云开发 BFF · AI 统一经 `aiGateway`（DeepSeek，密钥只在云端）· 由自建 AI Harness 驱动交付。
 
 ## 界面实况（真机）
@@ -105,14 +105,17 @@ npm run verify   # typecheck + lint + test + build:weapp
 
 > 活状态以 `harness/` 为准。
 
-- 仓库侧产品 MVP 完成：Stage A–C + D4 + B7/B8/B9 收敛轮，`verify` 全绿；真机 UI 已验（见上）。
-- 进行中：云函数真机链路打通 + 体验版冒烟（P0，微信/云侧人工）。
-- 上线后增量（P2）：opt-in 本地会话留存（ADR-005）、可观测性、反依赖真实数据打磨。
+- 当前为**体验版候选**：Stage A–C + D4 + B7/B8/B9 已完成，2026-11-16 复验 `verify` 全绿（23 测试 + weapp 构建）；真机 UI 已有首页/错误态证据。
+- 下一编码任务：`harness/plan.md` **Stage R1 会话请求代次与安全状态**。第二轮评审发现并发、重试、清除、云端错误归一化及反依赖等确定性 P0，旧“剩余仅人工”结论已废止。
+- 可并行人工项：云函数部署/环境确认；完整真机放行须在 R1–R5 后按 Gate R 验收。
+- 评审证据：[`docs/reviews/2026-11-16-production-readiness.md`](./docs/reviews/2026-11-16-production-readiness.md)；公开生产强化见 plan Stage F。
+- 上线后增量（P2）：opt-in 本地会话留存（ADR-005）、完整可观测性平台、反依赖真实数据打磨。
 
 ## 文档导航
 
 - 规则/协议/进度/记忆：`harness/`
 - 架构/验证/索引/隐私：`docs/`（`architecture.md` · `verification.md` · `privacy-guideline.md`）
+- 评审记录：`docs/reviews/2026-11-16-production-readiness.md`
 - 决策：`docs/adr/ADR-001~005`
 - 产品契约与设计契约：`reference/陷空山UX设计/`
 - 冒烟清单：`harness/checklists/mvp-smoke.md`

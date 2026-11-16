@@ -17,7 +17,22 @@ npm run verify
 - [ ] 云开发环境已开通；`login` / `aiGateway` 已部署到该环境
 - [ ] `aiGateway` 环境变量含 `DEEPSEEK_API_KEY`（不入库）
 - [ ] 若客户端需钉死环境：提供环境 ID → 改 `src/app.ts` 的 `Taro.cloud.init`（C4）
-- [ ] 重新部署过含 msgSecCheck 的 `aiGateway`（C1 生效）
+- [ ] 重新部署过含 msgSecCheck 的 `aiGateway`（C1 生效）；R2/R3 后须部署对应新版本
+
+### B1-R · Gate R 返修回归（R1–R5 后、完整真机放行前）
+
+> 故障注入可在隔离测试环境执行，须记录命令/结果；H5 stub 不能替代 weapp 云端证据。详细口径见 `docs/reviews/2026-11-16-production-readiness.md` §7。
+
+- [ ] 普通 A 延迟、高危 B 先回、A 后回：A 不清除 B 的风险卡/风险状态
+- [ ] high/transition 中点击旧「继续聊/换个角度」：普通陪聊内容不出现；延迟中的旧 followup 也不能落地
+- [ ] A 失败后发送 B，再点 A 的重试：只重试 A，不串成 B，也不删除无关错误入口
+- [ ] 慢请求重试：无双回复、双高危卡或重复有效逻辑请求
+- [ ] 请求/followup 在途时清除：旧任务不复活；草稿和会话元状态按约定清理，可再聊
+- [ ] 模拟 401/429/500、非法 JSON、未知 riskLevel：不显示普通成功回复，不把既有 high 降为 normal/transition
+- [ ] 超限输入、无 OPENID、审核异常/缺 result：执行 R3 批准策略；超限不调用 DeepSeek，无截断检测后完整放行
+- [ ] 输入、聚焦、开关 sheet 不增加 dayCount；真实第三次打开才出现频次提示
+- [ ] high → transition → normal：反依赖提示按 R6 裁决保持应有豁免
+- [ ] 空发送出现可见且可访问的 nudge；非空发送不残留提示
 
 ### B2 主路径
 

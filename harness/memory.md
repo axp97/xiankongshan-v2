@@ -5,37 +5,36 @@
 
 ## NEXT（新窗口只看这里取任务）
 
-**仓库侧产品 MVP 代码已完成（含 B7 UI 规范沉淀与 weapp 运行时保真；spec.test.ts 三向护栏常绿；根目录 README 已补）。** 下一「我」可编码项：无（Stage E 为上线后增量，勿提前做）。改 UI 数值先改 `src/shared/ui/spec.ts`+测试（rules §9）。
+**2026-11-16 状态重置：当前是体验版候选，不是“代码侧生产 MVP 已就绪”。** 第二轮生产可信度评审已落盘：`docs/reviews/2026-11-16-production-readiness.md`；原“下一我可编码项：无 / 剩余仅人工”结论废止。
 
-**track 链路评审结论（2026-08-08）**：经评估**不接入**。理由：① 隐私契约已申报「无第三方统计追踪」(privacy-guideline §二) 且 `app.ts` 主动 `traceUser: false`；② E2 属 P2 非 MVP，memory 明确「不开做 Stage E」；③ 当前瓶颈在 P0 人工项而非可观测性。将来若接须走方案 B（仅脱敏运维指标、不记对话原文）+ 同步改隐私指引 + 立 plan 项，属产品决策。下个窗口勿重开此评估。
+**下一「我」编码项：`harness/plan.md` Stage R1——会话请求代次、响应归属与清除边界。** 先处理 `useChat.ts` / `messages.ts` / `ChatView.tsx` 及行为测试：旧 normal 不得清除新 high；A/B 重试不串话；慢重试不双回；清除后旧网络/followup/timer 不得写回。不要直接跳到 UI 精修或 Stage F/E。
 
-**P0 人工（卡真机内测，见 `harness/plan.md` Stage D）**：
+**R 阶段顺序**：R1 请求生命周期 → R2 提供方错误与契约 → R3 内容安全三态/长度 → R4 反依赖 → R5 高危交互让位/空发送提示。每项完成须 `npm run verify` + 对应故障注入/行为测试 + 勾选 plan + 刷新 memory。Gate R 界面验收见评审 §7 与冒烟 checklist。
 
-- 进展（2026-08-08）：微信开发者工具模拟器主路径已通（发消息收回复 OK）。**但这不等于真机冒烟通过**。
-- **D1 待确认**：云函数是否已「上传并部署到云端」（开发者工具本地调试可绕过部署）；`DEEPSEEK_API_KEY` 是否已配到云控制台环境变量。
-- **D2 未做**：真机冒烟。开发者工具内 msgSecCheck（C1）因无 openid 会 skip（`aiGateway/index.js:28`），时段主题真机显色 / 体验版分发隔离 / 安全卡真实触发均须真机验。B7/B8 修的恰是真机才暴露的坑。
-- 真机冒烟走 `harness/checklists/mvp-smoke.md` 逐项勾选；截图对本环境无效（模型不支持图片输入），结果用文字反馈。
+**可并行「你」事项**：D1 确认云环境、两函数部署、密钥与版本；R6 裁决 high 保持/退出、medium 最低内容、危机按钮真实承诺及依赖措辞。完整 D2 真机放行必须在 R1–R5 后，风险协议需 R6；公开生产另有 F1–F4。
 
-**全权接管生效**（2026-08-08 授权，见 protocol §5.7）：能自主的一律自主（读截图比对契约、改诊断代码、跑验证、刷文档）；人工只保留云控制台物理不可达的最小清单（见下）。
+**不要**：重开 ADR；提前做 Stage E；把 H5 stub 当生产证据；把 23 个现有单测或本地 ALL GREEN 当真机/云端安全证据。track 链路仍按 2026-08-08 结论不接第三方统计追踪；未来 F1 只允许经隐私评审的脱敏运维指标，不记对话原文。
 
-用户说「往下」且无新环境 ID / 无新需求时：推进最小人工清单，**不要**开做 Stage E，**不要**重开 ADR，**不要**接 track 链路。
+**对话与变更约定（2026-11-16 负责人要求）**：每次输出开头说明当前链路、已做与剩余；每次更改前先总结串联方案并列出文件及各自作用，更改后提供界面验收分点。
 
-## 当前状态（2026-08-08）
+## 当前状态（2026-11-16）
 
-- Stage A–C + D4 + **B7/B8/B9**：仓库侧完成，UI 达可提交状态；B9 收敛 composer 单行态（输入区与发送键等高、垂直居中）。
-- **D1/D2 进展**：微信开发者工具模拟器主路径已通（2026-08-08 负责人反馈）；**真机截图已验 UI 全对**（home/chat 双页、错误卡形态与文案逐字对齐契约 chat.html:873）；但**真机 `callFunction` 失败**（错误卡路径触发），开发者工具 ≠ 真机，D1 部署待确认、D2 真机冒烟未做。
-- **排障抓手**（2026-08-08 补）：`cloudGateway.ts` 两个失败分支已加 `console.error` 诊断日志（仅本地控制台，不含对话内容）。真机开调试/vConsole 或开发者工具 Console 可看到云侧真实 errMsg（未部署/环境不匹配/NO_KEY/PROVIDER 一目了然）。
-- **README v2**（2026-08-16）：按面试战略 E 清单重设计（定位一句 + 分层图 + harness 亮点 + 真机截图 + description 建议）；真机截图入 `docs/screenshots/`（含替换约定）；简历锚点（prompt 红线 / aiGateway / spec 护栏 / harness）全部可见。同日新增 `riskState.test.ts` 补风险状态机护栏。两轮全架构评审结论见 plan 工程卫生。
-- **UI 规格唯一源** `src/shared/ui/spec.ts`；改 UI 数值先改 spec+测试再改 scss（rules.md §9）。
-- weapp 根 token 经 mixin 双发 `:root`+`page`；Icon weapp 走 `<image>` 烤色（H5 走 mask）。
-- 信任 sheet 五项含「不用于训练」（对齐 product-definition §8 / home.html）。
-- 云环境：`TARO_APP_CLOUD_ENV` 经 `.env` 注入；未填则用开发者工具当前环境。
-- 内测 MVP 定义：个人号体验版即可；公开上架（D3）另册。
+- **第二轮评审与交接文档已入库**：新增 `docs/reviews/2026-11-16-production-readiness.md`；plan 新增 Stage R/F；README 状态改为体验版候选；隐私草案、云端 README 和冒烟清单同步校正。本轮仅文档变更，无产品 UI/运行时变更。
+- **本地复验**：`npm run verify` 全绿（typecheck + lint + 4 文件 23 测试 + weapp build）；`build:h5` 通过但入口 305 KiB 有体积警告。依赖审计 23 项需可达性分诊，不等于 23 个线上漏洞，也不覆盖云函数独立依赖图。
+- **已确认 P0**：旧响应可覆盖新 high；提供方 JSON 错误可伪装 normal；未知 riskLevel 向 none 降级；重试串话/双发；清除后旧任务复活；high 中旧 followup 绕过；render 虚增反依赖次数；2500 字后内容未审但仍外发/展示。详见评审 §4。
+- **历史完成仍有效的是“代码分支/视觉契约已落地”，不是生产验收**：Stage A–C + D4 + B7/B8/B9 保留；UI 规格唯一源仍为 `src/shared/ui/spec.ts`，改数值先改 spec+测试。
+- **真机证据边界**：2026-08-08 模拟器主路径曾通、真机首页/错误态 UI 曾验，但真机 `callFunction` 失败；当前云侧实况需在 D1 重新确认，正常回复、高危、审核、清除、分发均未形成完整真机通过记录。
+- **隐私口径**：README/隐私草案已改为“本应用不自行训练/建服务端画像”，并披露 OPENID 也用于内容安全；应用内 TRUST 的绝对“不用于训练”仍须在 F4 根据第三方证据对齐。anonymousId 当前未被 aiGateway 使用。
+- **诊断日志边界**：代码未显式打印正文，但 `cloudGateway.ts` 会记录完整异常对象，不能再绝对宣称“不含对话内容”；F1/F4 做白名单错误码与日志保留/访问核验。
+- 云环境：`TARO_APP_CLOUD_ENV` 经 `.env` 注入；未填则用开发者工具当前环境。公开生产须在 F4 显式隔离并记录版本。
+- 内测 MVP 定义：个人号体验版即可；公开上架（D3）须先完成 F1–F4。
 
 ## 环境与构建的坑（已验证的事实）
 
 - Taro CLI 缓存：`HOME="$(pwd)/.home"`（`verify.sh` 已处理）。
-- `webpack@5.91.0` 钉死；`npm install --legacy-peer-deps`。
+- `webpack@5.91.0` 钉死；干净安装用 `npm ci --legacy-peer-deps`。
+- 2026-11-16 当前 Node `22.12.0` 安装时出现 `eslint-visitor-keys@5.0.1` engine 警告（要求 `^22.13.0` 等）；F4 固定受支持 Node LTS 与云函数 lockfile。
+- 默认 npmmirror 不支持 npm audit quick endpoint；本次审计显式使用 `--registry=https://registry.npmjs.org`。
 - Babel 三件套显式安装；Sass `@use`；`[contenthash:8]`。
 - Textarea 内层需 `background: transparent !important`。
 - **WXSS 不识 `:root`**：根 token 须 `page` 双发（theme.scss mixin；spec.test.ts 护栏）。

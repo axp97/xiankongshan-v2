@@ -33,7 +33,11 @@ Agent 执行任务请走 `../AGENTS.md` 冷启动。人类读架构时按序：
 - `./specs/phase-1-minimal-chat.md`（阶段 1 架构验证切片；非产品 MVP）
 - `./privacy-guideline.md`（隐私申报草案，待主体审定）
 
-## 5. 阶段摘要
+## 5. 评审记录
+
+- `./reviews/2026-11-16-production-readiness.md`：第二轮生产可信度评审；取代“代码侧仅剩人工步骤”的旧结论，任务拆解以 `harness/plan.md` Stage R/F 为准。
+
+## 6. 阶段摘要
 
 > 术语（见 `./adr/ADR-004-mvp-scope-alignment.md`）：**阶段 1 是架构验证切片，不是产品 MVP**；**产品 MVP = product-definition.md 契约，落在阶段 2**。
 
@@ -45,7 +49,7 @@ Agent 执行任务请走 `../AGENTS.md` 冷启动。人类读架构时按序：
 | 阶段 3 | 树洞主路径                                                             | 尚未开始                              |
 | 阶段 4 | 生产治理                                                               | 尚未开始                              |
 
-## 6. 阶段 1 非目标（历史约束，已兑现）
+## 7. 阶段 1 非目标（历史约束，已兑现）
 
 - 不从旧项目完整迁移功能。
 - 不实现树洞。
