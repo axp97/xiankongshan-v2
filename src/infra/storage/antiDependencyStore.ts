@@ -1,5 +1,6 @@
 import Taro from '@tarojs/taro'
 import { STORAGE_KEY } from '@/shared/constants'
+import { parsePersistedMeta } from '@/domain/anti-dependency/antiDependency'
 import { type PersistedMeta, emptyPersistedMeta } from '@/domain/anti-dependency/types'
 
 // 反依赖持久化：仅客户端本地，不上传服务端（匿名性边界）。
@@ -8,7 +9,7 @@ export const loadAntiDep = (): PersistedMeta => {
     const raw = Taro.getStorageSync(STORAGE_KEY.antiDependency)
     if (!raw) return emptyPersistedMeta()
     const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw
-    return { ...emptyPersistedMeta(), ...(parsed as Partial<PersistedMeta>) }
+    return parsePersistedMeta(parsed)
   } catch {
     return emptyPersistedMeta()
   }
@@ -18,7 +19,7 @@ export const saveAntiDep = (meta: PersistedMeta): void => {
   const persisted: PersistedMeta = {
     dayCount: meta.dayCount,
     lastSessionDate: meta.lastSessionDate,
-    consecutiveDays: meta.consecutiveDays,
+    priorHighDays: meta.priorHighDays,
     crossDayCareShown: meta.crossDayCareShown
   }
   try {

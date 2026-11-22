@@ -6,6 +6,7 @@ import { useChat } from './useChat'
 import { TrustSheet } from '@/features/privacy/TrustSheet'
 import { Icon } from '@/shared/ui/Icon'
 import { placeholderAt } from '@/shared/ui/colorTokens'
+import { CONTENT_SAFETY, TIMING } from '@/shared/constants'
 import type { ThemeKey } from '@/shared/ui/spec'
 import * as copy from './copy'
 import './ChatView.scss'
@@ -32,6 +33,7 @@ export const ChatView = ({ seed, tod }: Props) => {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [scrollInto, setScrollInto] = useState('')
   const seededRef = useRef(false)
+  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 首页带入的一句直接发送（一次性）。
   useEffect(() => {
@@ -41,8 +43,15 @@ export const ChatView = ({ seed, tod }: Props) => {
     }
   }, [seed, chat])
 
+  // 同一个 scroll-into-view 值不会再次滚动。先清空，再指回底部锚点。
   useEffect(() => {
-    if (chat.items.length > 0) setScrollInto('stream-bottom')
+    if (chat.items.length === 0) {
+      setScrollInto('')
+      return
+    }
+    setScrollInto('')
+    const timer = setTimeout(() => setScrollInto('stream-bottom'), 32)
+    return () => clearTimeout(timer)
   }, [chat.items])
 
   const onInput = (e: BaseEventOrig<TextareaProps.onInputEventDetail>) => {
@@ -50,24 +59,48 @@ export const ChatView = ({ seed, tod }: Props) => {
     if (nudge) setNudge(false)
   }
 
+  const atLimit = text.length >= CONTENT_SAFETY.maxUnits
+  const nudgeShown = nudge || atLimit
+
+  const showNudge = () => {
+    setNudge(true)
+    if (nudgeTimer.current) clearTimeout(nudgeTimer.current)
+    nudgeTimer.current = setTimeout(() => setNudge(false), TIMING.nudgeMs)
+  }
+
+  useEffect(
+    () => () => {
+      if (nudgeTimer.current) clearTimeout(nudgeTimer.current)
+    },
+    []
+  )
+
   const submit = () => {
     if (!text.trim()) {
-      setNudge(true)
-      setTimeout(() => setNudge(false), 2600)
+      showNudge()
       return
     }
+    if (text.trim().length > CONTENT_SAFETY.maxUnits) return
     chat.send(text)
     setText('')
   }
 
   const clearAll = () => {
     chat.clearSession()
+    setText('')
+    setNudge(false)
     setConfirmOpen(false)
   }
 
   return (
     <View className={`chat ${chat.riskActive ? 'risk-active' : ''}`}>
-      <ScrollView className="stream" scrollY scrollIntoView={scrollInto} scrollWithAnimation>
+      <ScrollView
+        className="stream"
+        scrollY
+        scrollIntoView={scrollInto}
+        scrollIntoViewAlignment="end"
+        scrollWithAnimation
+      >
         <View className="stream-inner">
           {chat.showOpening && (
             <View className="opening">
@@ -82,7 +115,13 @@ export const ChatView = ({ seed, tod }: Props) => {
           )}
 
           {chat.items.map((it) => (
-            <StreamRow key={it.id} item={it} onFollowup={chat.followup} onRetry={chat.retry} />
+            <StreamRow
+              key={it.id}
+              item={it}
+              showCompanion={chat.companionFollowups}
+              onFollowup={chat.followup}
+              onRetry={chat.retry}
+            />
           ))}
 
           <View id="stream-bottom" className="stream-anchor" />
@@ -91,7 +130,9 @@ export const ChatView = ({ seed, tod }: Props) => {
 
       <View className="dock">
         <View className="dock-wrap">
-          <View className={`nudge ${nudge ? 'show' : ''}`}>{copy.COMPOSER.nudge}</View>
+          <View className={`nudge ${nudgeShown ? 'show' : ''}`} ariaRole={nudgeShown ? 'alert' : undefined}>
+            {atLimit ? copy.COMPOSER.tooLong : copy.COMPOSER.nudge}
+          </View>
           <View className="secondary-row">
             <View className="hint-treehole">
               <Icon name="treehole" size={14} color="var(--sage)" />
@@ -109,13 +150,17 @@ export const ChatView = ({ seed, tod }: Props) => {
               placeholder={copy.COMPOSER.placeholder}
               placeholderStyle={`color: ${placeholderAt(tod)}`}
               autoHeight
-              maxlength={-1}
+              maxlength={CONTENT_SAFETY.maxUnits}
               adjustPosition
               onInput={onInput}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
             />
-            <Button className="send" disabled={!text.trim()} onClick={submit}>
+            <Button
+              className={`send ${text.trim() ? '' : 'is-empty'}`}
+              ariaLabel="发送"
+              onClick={submit}
+            >
               <Icon name="send" size={20} color="#fff" />
             </Button>
           </View>
@@ -139,12 +184,14 @@ export const ChatView = ({ seed, tod }: Props) => {
 
 const StreamRow = ({
   item,
+  showCompanion,
   onFollowup,
   onRetry
 }: {
   item: StreamItem
+  showCompanion: boolean
   onFollowup: ReturnType<typeof useChat>['followup']
-  onRetry: () => void
+  onRetry: (itemId: string) => void
 }) => {
   switch (item.kind) {
     case 'user':
@@ -160,7 +207,7 @@ const StreamRow = ({
       return (
         <View className="msg ai">
           <View className="bubble">{paragraphs(item.text)}</View>
-          {item.followups && (
+          {item.followups && showCompanion && (
             <View className="followups">
               <View className="chip" hoverClass="pressed" onClick={() => onFollowup('more')}>
                 <Icon name="plus" size={13} color="var(--sage)" />
@@ -200,7 +247,7 @@ const StreamRow = ({
             <View className="slow-hint">
               <Icon name="clock" size={15} color="var(--notice)" className="sh-ic" />
               <Text>{copy.SLOW_HINT}</Text>
-              <Text className="retry" onClick={onRetry}>
+              <Text className="retry" onClick={() => onRetry(item.id)}>
                 重试
               </Text>
             </View>
@@ -236,9 +283,9 @@ const StreamRow = ({
           <Icon name="warnTriangle" size={20} color="var(--notice)" className="eb-ic" />
           <View className="eb-body">
             <Text className="eb-title">{copy.ERROR_COPY.title}</Text>
-            <Text className="eb-sub">{copy.ERROR_COPY.sub}</Text>
+            <Text className="eb-sub">{item.detail ?? copy.ERROR_COPY.sub}</Text>
           </View>
-          <View className="eb-retry" onClick={onRetry}>
+          <View className="eb-retry" onClick={() => onRetry(item.id)}>
             重试
           </View>
         </View>

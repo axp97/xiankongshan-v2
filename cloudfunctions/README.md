@@ -23,21 +23,33 @@
 
 ## 验证
 
-- 云开发控制台「云函数 → aiGateway → 测试」，入参 `{"message":"今天有点累"}`，应返回 `{ content, riskLevel:"low|none", createdAt }`。
-- 入参 `{"message":"我不想活了"}`，应返回 `{ riskLevel:"high" }`（不调用模型，服务端兜底）。
+- 云开发控制台测试没有 openid。普通消息应返回 `{ error: "SEC_UNAVAILABLE" }`，不得调用模型。高危关键词仍直接返回 `{ riskLevel: "high" }`。正常回复、拦截和检测通过要在有 openid 的真机上验证。
+- 入参超过 2500 个 UTF-16 单元时返回 `{ error: "INPUT_TOO_LONG" }`，不调用模型。
 - 真机/模拟器发消息，UI 收到归一化 `ChatReply`，high 时展示安全卡。
-- 内容安全：真机发一条明显违规文本（如涉政辱骂类测试语），应收到温和拦截回复且不调模型；日志无 `fail-open` 记录即链路正常。
+- 内容安全：真机发一条明显违规文本（如涉政辱骂类测试语），应收到温和拦截回复且不调模型。日志出现 `unavailable` 即这次检测没有当成通过。
 
 ## 内容安全（security.msgSecCheck）
 
-- 对**用户输入**与 **AI 输出**各设一个调用点；权限已在 `aiGateway/config.json` 的 `permissions.openapi` 声明，部署即生效，免费。当前每次只检测前 2500 个 UTF-16 单元，且存在下述 fail-open；R3 完成前不得把“双向调用点”表述为完整内容安全保证。
-- 检测顺序：高危兜底 **先于** 内容安全——危机表达要进安全协议获得帮助，而不是被审核拦截。
-- 命中违规：输入侧返回温和拦截语（不调模型）；输出侧替换为兜底陪伴语（风险级别保留）。
-- **fail-open 策略**：检测服务不可用时放行并记 `console.error` 日志（内测期可用性优先）。公开上架前应复评是否改为 fail-closed。
-- 控制台测试无 openid（msgSecCheck v2 必填），会跳过检测并记 warn——内容安全链路必须在真机/模拟器验证。
+- 对**用户输入**与 **AI 输出**各检一次。权限在 `aiGateway/config.json` 的 `permissions.openapi`。检测整段文本，不再截断后把未检测的部分外发或展示。
+- 结果只有三态：`pass` 继续；`blocked` 用已审定文案（输入是温和拦截，输出是兜底句，风险级保留）；`unavailable` 时输入不调用模型，输出整段换成兜底句。
+- 无 openid、调用异常、缺 `result` 都是 `unavailable`。控制台测试没有 openid，不能代表真机检测。
+- 检测顺序：高危兜底 **先于** 内容安全。危机表达进安全协议，不先被审核拦住。
+- 单条上限 2500 个 UTF-16 单元，云函数是权威校验。超出返回 `INPUT_TOO_LONG`。
+
+## 提供方错误（R2）
+
+模型调用失败不返回 `ChatReply`。稳定错误码：
+
+- `PROVIDER_AUTH`：401 / 403
+- `PROVIDER_RATE_LIMIT`：429
+- `PROVIDER_UPSTREAM`：其他非 2xx、超时、连接中断
+- `PROVIDER_SHAPE`：空 choices、非法 JSON、未知 riskLevel、字段类型不对
+- `EMPTY` / `NO_KEY`：空输入 / 未配置密钥，含义不变
+
+这些码在客户端是可重试的网关错误，不会显示成正常陪伴回复，也不会解除已有 high。日志只记错误码或 `errMsg`，不记响应正文。
 
 ## 安全边界
 
 - 高危检测在服务端且不依赖模型可用性：命中现有关键词表时直接返回 `high`；未覆盖表达仍需模型判级与安全评测。
-- 内容安全双向检测：用户输入与模型输出都有 `msgSecCheck` 调用点；无 OPENID、异常、缺 result 和 2500 字后后缀存在放行边界，R3 前不作“违规不出云函数”的绝对承诺。
+- 内容安全不再 fail-open。检测不可用时，输入不会送给模型，输出不会展示未检测正文。
 - `anonymousId` 为 SHA-256 派生的稳定假名，服务端不落库、不建画像，当前 `aiGateway` 不读取该字段；F4 需决定删除最小化或按真实用途重建。

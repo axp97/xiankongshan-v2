@@ -3,7 +3,8 @@
 export type PersistedMeta = {
   dayCount: number
   lastSessionDate: string | null
-  consecutiveDays: number
+  /** 今天之前，连续且每天都达到高频阈值的天数。不是打卡。 */
+  priorHighDays: number
   crossDayCareShown: boolean
 }
 
@@ -18,6 +19,6 @@ export type SessionMeta = PersistedMeta & {
 export const emptyPersistedMeta = (): PersistedMeta => ({
   dayCount: 0,
   lastSessionDate: null,
-  consecutiveDays: 0,
+  priorHighDays: 0,
   crossDayCareShown: false
 })

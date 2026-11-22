@@ -1,5 +1,10 @@
 // 应用层聊天类型：UI 只消费这些稳定类型，绝不接触任何 AI 提供方原生字段。
-export type RiskLevel = 'none' | 'low' | 'medium' | 'high'
+export const RISK_LEVELS = ['none', 'low', 'medium', 'high'] as const
+
+export type RiskLevel = (typeof RISK_LEVELS)[number]
+
+export const isRiskLevel = (value: unknown): value is RiskLevel =>
+  typeof value === 'string' && (RISK_LEVELS as readonly string[]).includes(value)
 
 export type ChatReply = {
   readonly id: string

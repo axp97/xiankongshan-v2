@@ -1,4 +1,5 @@
 import Taro from '@tarojs/taro'
+import { ensureCloud } from '@/infra/cloud/ensureCloud'
 
 // 匿名身份获取：weapp 走 login 云函数派生；h5 用本地随机 id（仅体验）。
 // 结果缓存本地，避免每次会话重复请求。
@@ -30,6 +31,7 @@ export const getAnonymousId = async (): Promise<string | undefined> => {
   }
   if (process.env.TARO_ENV === 'weapp') {
     try {
+      ensureCloud()
       const res = await Taro.cloud.callFunction({ name: 'login' })
       const id = (res.result as { anonymousId?: string } | undefined)?.anonymousId
       if (id) {

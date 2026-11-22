@@ -1,5 +1,6 @@
 import { type Result, err } from '@/shared/result'
-import { type AppError, appError, ErrorCode } from '@/shared/errors'
+import { CONTENT_SAFETY } from '@/shared/constants'
+import { type AppError, appError, ErrorCode, UserMessage } from '@/shared/errors'
 import type { AiGatewayPort } from './ports'
 import type { ChatReply, SendMessageInput } from './types'
 
@@ -11,6 +12,11 @@ export const sendMessage = async (
   const content = input.content.trim()
   if (content.length === 0) {
     return err(appError(ErrorCode.EmptyInput, '还没写呢——一个词、半句话都可以。', false))
+  }
+  if (content.length > CONTENT_SAFETY.maxUnits) {
+    return err(
+      appError(ErrorCode.InputTooLong, UserMessage.inputTooLong, false)
+    )
   }
   return gateway.send({ message: content, anonymousId: input.anonymousId })
 }

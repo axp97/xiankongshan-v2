@@ -23,3 +23,8 @@ export const RETENTION = {
 export const STORAGE_KEY = {
   antiDependency: 'xkssv2:anti-dep'
 } as const
+
+/** 与云函数 contentSafety.js 的 SEC_MAX_UNITS 对齐：一条消息的 UTF-16 单元上限。 */
+export const CONTENT_SAFETY = {
+  maxUnits: 2500
+} as const

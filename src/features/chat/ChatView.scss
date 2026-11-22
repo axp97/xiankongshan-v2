@@ -491,10 +491,11 @@
 .composer .send::after {
   border: none;
 }
-.composer .send[disabled] {
+.composer .send[disabled],
+.composer .send.is-empty {
   background: var(--send-disabled);
 }
-.composer .send:not([disabled]):active {
+.composer .send:not([disabled]):not(.is-empty):active {
   transform: translateY(1px);
   background: var(--send-bg-press);
 }

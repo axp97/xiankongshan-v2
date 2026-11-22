@@ -14,7 +14,11 @@ export default defineConfig<'webpack5'>(async (merge, { mode }) => {
     sourceRoot: 'src',
     outputRoot: `dist/${process.env.TARO_ENV}`,
     plugins: [],
-    defineConstants: {},
+    // 小程序运行时没有 Node 的 process。TARO_APP_CLOUD_ENV 未写入 .env 时，
+    // Taro 不会替换这处读取，基础库 3.x 会抛 process is not defined。
+    defineConstants: {
+      'process.env.TARO_APP_CLOUD_ENV': JSON.stringify(process.env.TARO_APP_CLOUD_ENV ?? '')
+    },
     alias: { '@': path.resolve(__dirname, '..', 'src') },
     copy: { patterns: [], options: {} },
     framework: 'react',

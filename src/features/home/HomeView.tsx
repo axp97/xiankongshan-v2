@@ -5,6 +5,7 @@ import type { BaseEventOrig, TextareaProps } from '@tarojs/components'
 import { TrustSheet } from '@/features/privacy/TrustSheet'
 import { Icon } from '@/shared/ui/Icon'
 import { placeholderAt } from '@/shared/ui/colorTokens'
+import { CONTENT_SAFETY } from '@/shared/constants'
 import type { IconName } from '@/shared/ui/icons'
 import type { ThemeKey } from '@/shared/ui/spec'
 import './HomeView.scss'
@@ -29,7 +30,7 @@ export const HomeView = ({ tod }: { tod: ThemeKey }) => {
 
   const go = () => {
     const t = text.trim()
-    if (!t) return
+    if (!t || t.length > CONTENT_SAFETY.maxUnits) return
     Taro.navigateTo({ url: `/pages/chat/index?seed=${encodeURIComponent(t)}` })
   }
 
@@ -51,7 +52,7 @@ export const HomeView = ({ tod }: { tod: ThemeKey }) => {
           placeholder="写下一句现在最想说的话…"
           placeholderStyle={`color: ${placeholderAt(tod)}`}
           autoHeight
-          maxlength={-1}
+          maxlength={CONTENT_SAFETY.maxUnits}
           onInput={onInput}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

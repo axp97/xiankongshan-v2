@@ -1,19 +1,21 @@
-import { type PropsWithChildren } from 'react'
-import Taro from '@tarojs/taro'
+import { Component, type PropsWithChildren } from 'react'
 import './app.scss'
+import { ensureCloud } from '@/infra/cloud/ensureCloud'
 
-// weapp 下初始化云环境（h5 无 cloud，跳过）。
-// 环境 ID：复制 `.env.example` → `.env`，填写 `TARO_APP_CLOUD_ENV`；未填则走开发者工具当前云环境。
-if (process.env.TARO_ENV === 'weapp') {
-  try {
-    const env = process.env.TARO_APP_CLOUD_ENV
-    Taro.cloud.init(env ? { env, traceUser: false } : { traceUser: false })
-  } catch {
-    /* 未开通云环境时静默，主路径仍可用桩体验 */
+// 类组件的 onLaunch 会由 Taro 在小程序启动时直接调用。
+class App extends Component<PropsWithChildren> {
+  onLaunch() {
+    try {
+      ensureCloud()
+    } catch (e) {
+      const detail = e instanceof Error && e.message ? e.message : 'INIT_FAILED'
+      console.error('[cloud] init 失败:', detail)
+    }
+  }
+
+  render() {
+    return this.props.children
   }
 }
-
-// 应用壳：仅装配，不含业务逻辑（对齐 architecture.md 分层职责）。
-const App = ({ children }: PropsWithChildren) => children
 
 export default App

@@ -1,0 +1,3 @@
+# 设计契约是像素级事实源，入库供 spec 护栏比对，不属应用源码。
+# 排除出 GitHub 语言统计，避免仓库被标成 HTML 而非 TypeScript。
+reference/** linguist-documentation

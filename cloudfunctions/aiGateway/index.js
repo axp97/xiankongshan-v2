@@ -4,12 +4,13 @@
 const https = require('https')
 const cloud = require('wx-server-sdk')
 const { buildMessages } = require('./prompt')
+const { ProviderCode, normalizeProviderHttp } = require('./providerReply')
+const { SEC_MAX_UNITS, Screen, interpretSecCheck, gateInput, selectOutput } = require('./contentSafety')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 // 服务端高危兜底：危机检测不依赖模型可用性，命中即让位安全协议（product-definition.md §6 high）。
 const PAT_HIGH = /(不想活|活不下去|结束生命|自杀|轻生|不想醒来|撑不下去了|想死|了结自己|不想再撑|一了百了)/
-const RISK = ['none', 'low', 'medium', 'high']
 
 const reply = (content, riskLevel) => ({
   id: `r_${Date.now()}`,
@@ -18,28 +19,24 @@ const reply = (content, riskLevel) => ({
   createdAt: Date.now()
 })
 
-// —— 内容安全（C1）：security.msgSecCheck 检违法违规，不是事实性纠错 ——
-// 用户输入与 AI 输出各检一次。检测服务不可用时放行并记日志（内测期可用性优先，
-// 策略见 cloudfunctions/README.md）；命中违规（errCode 87014 / suggest!==pass）则拦截。
-const SEC_MAX_CHARS = 2500
-const secPass = async (content, openid) => {
+// 内容安全三态：pass 才继续；blocked 用已审定文案；unavailable 不把未检测文本外发或展示。
+const screenContent = async (content, openid) => {
   if (!openid) {
-    // 控制台测试等无 openid 上下文：msgSecCheck v2 必须带 openid，跳过并记录。
-    console.warn('msgSecCheck skipped: no openid in context')
-    return true
+    console.warn('msgSecCheck unavailable: no openid')
+    return interpretSecCheck({ openid: '' })
   }
   try {
     const res = await cloud.openapi.security.msgSecCheck({
       openid,
       scene: 4,
       version: 2,
-      content: String(content).slice(0, SEC_MAX_CHARS)
+      content: String(content)
     })
-    return !res || !res.result || res.result.suggest === 'pass'
+    return interpretSecCheck({ openid, response: res })
   } catch (e) {
-    if (e && (e.errCode === 87014 || e.errcode === 87014)) return false
-    console.error('msgSecCheck unavailable, fail-open:', (e && (e.errMsg || e.message)) || e)
-    return true
+    const code = e && (e.errCode || e.errcode)
+    console.error('msgSecCheck unavailable:', code || 'exception')
+    return interpretSecCheck({ openid, error: e })
   }
 }
 
@@ -50,6 +47,17 @@ const OUTPUT_FALLBACK = '嗯，我在。你愿意说，我就听着。'
 
 const callDeepSeek = (apiKey, messages) =>
   new Promise((resolve, reject) => {
+    let settled = false
+    const finish = (value) => {
+      if (settled) return
+      settled = true
+      resolve(value)
+    }
+    const fail = (error) => {
+      if (settled) return
+      settled = true
+      reject(error)
+    }
     const payload = JSON.stringify({
       model: 'deepseek-chat',
       messages,
@@ -70,18 +78,22 @@ const callDeepSeek = (apiKey, messages) =>
         }
       },
       (res) => {
+        const statusCode = res.statusCode || 0
+        // 非 2xx 不读取正文，避免错误页被当成模型补全。
+        if (statusCode < 200 || statusCode >= 300) {
+          res.resume()
+          finish(normalizeProviderHttp(statusCode, ''))
+          return
+        }
         let data = ''
-        res.on('data', (chunk) => (data += chunk))
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(data))
-          } catch (e) {
-            reject(e)
-          }
+        res.on('data', (chunk) => {
+          data += chunk
         })
+        res.on('error', fail)
+        res.on('end', () => finish(normalizeProviderHttp(statusCode, data)))
       }
     )
-    req.on('error', reject)
+    req.on('error', fail)
     req.on('timeout', () => req.destroy(new Error('timeout')))
     req.write(payload)
     req.end()
@@ -97,35 +109,31 @@ exports.main = async (event) => {
   //    先于内容安全——危机表达要进安全协议获得帮助，而不是被审核拦截。
   if (PAT_HIGH.test(message)) return reply('', 'high')
 
-  // 2) 输入内容安全：违规则温和拦截，不调用模型。
-  if (!(await secPass(message, OPENID))) return reply(INPUT_BLOCKED_REPLY, 'none')
+  // 2) 输入内容安全：超限或检测不可用都不调用模型；违规则温和拦截。
+  const inputGate = gateInput({
+    tooLong: message.length > SEC_MAX_UNITS,
+    screen: message.length > SEC_MAX_UNITS ? Screen.UNAVAILABLE : await screenContent(message, OPENID)
+  })
+  if (inputGate.type === 'too_long') return { error: 'INPUT_TOO_LONG' }
+  if (inputGate.type === 'unavailable') return { error: 'SEC_UNAVAILABLE' }
+  if (inputGate.type === 'blocked') return reply(INPUT_BLOCKED_REPLY, 'none')
 
   // 3) 正常路径：走 DeepSeek 生成陪伴内容 + 判级。
   const apiKey = process.env.DEEPSEEK_API_KEY
   if (!apiKey) return { error: 'NO_KEY' }
 
   try {
-    const resp = await callDeepSeek(apiKey, buildMessages(message))
-    const raw =
-      resp && resp.choices && resp.choices[0] && resp.choices[0].message
-        ? resp.choices[0].message.content
-        : ''
-    let parsed
-    try {
-      parsed = JSON.parse(raw)
-    } catch (_) {
-      parsed = { content: raw || '', riskLevel: 'none' }
-    }
-    const level = RISK.includes(parsed.riskLevel) ? parsed.riskLevel : 'none'
-    const content =
-      typeof parsed.content === 'string' && parsed.content.trim()
-        ? parsed.content.trim()
-        : OUTPUT_FALLBACK
-
-    // 4) 输出内容安全：模型输出违规则替换为兜底陪伴语，风险级别保留。
-    const safe = await secPass(content, OPENID)
-    return reply(safe ? content : OUTPUT_FALLBACK, level)
+    const outcome = await callDeepSeek(apiKey, buildMessages(message))
+    if (outcome.error) return { error: outcome.error }
+    const modelText = outcome.content.trim()
+    const outputScreen =
+      modelText && modelText.length <= SEC_MAX_UNITS
+        ? await screenContent(modelText, OPENID)
+        : Screen.UNAVAILABLE
+    const content = selectOutput({ modelText, screen: outputScreen, fallback: OUTPUT_FALLBACK })
+    return reply(content, outcome.riskLevel)
   } catch (e) {
-    return { error: 'PROVIDER' }
+    console.error('aiGateway provider transport:', (e && e.message) || ProviderCode.UPSTREAM)
+    return { error: ProviderCode.UPSTREAM }
   }
 }

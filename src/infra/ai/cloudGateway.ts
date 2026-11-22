@@ -1,43 +1,46 @@
 import Taro from '@tarojs/taro'
 import { type Result, ok, err } from '@/shared/result'
-import { type AppError, appError, ErrorCode } from '@/shared/errors'
+import { type AppError, appError, ErrorCode, UserMessage } from '@/shared/errors'
 import type { AiGatewayPort } from '@/domain/chat/ports'
-import type { AiGatewayRequest, ChatReply, RiskLevel } from '@/domain/chat/types'
+import type { AiGatewayRequest, ChatReply } from '@/domain/chat/types'
+import { parseChatReply } from './chatReply'
+import { ensureCloud } from '@/infra/cloud/ensureCloud'
 
 // 微信云 BFF 适配器：唯一允许触达 aiGateway 云函数的出口（ADR-003）。
-const RISK: readonly RiskLevel[] = ['none', 'low', 'medium', 'high']
+const replyError = (code: unknown): AppError => {
+  if (code === 'INPUT_TOO_LONG') return appError(ErrorCode.InputTooLong, UserMessage.inputTooLong, false)
+  if (code === 'SEC_UNAVAILABLE') return appError(ErrorCode.Gateway, UserMessage.secUnavailable, true)
+  return appError(ErrorCode.Gateway, '回应格式异常，请稍后再试。', true)
+}
 
-const toReply = (raw: unknown): ChatReply | null => {
-  if (typeof raw !== 'object' || raw === null) return null
-  const r = raw as Record<string, unknown>
-  const level = RISK.includes(r.riskLevel as RiskLevel) ? (r.riskLevel as RiskLevel) : 'none'
-  if (typeof r.content !== 'string') return null
-  return {
-    id: typeof r.id === 'string' ? r.id : `reply_${Date.now()}`,
-    content: r.content,
-    riskLevel: level,
-    createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now()
+const callFailureDetail = (error: unknown): string => {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'object' && error !== null && 'errMsg' in error) {
+    const msg = (error as { errMsg?: unknown }).errMsg
+    if (typeof msg === 'string' && msg.length > 0) return msg
   }
+  return 'CALL_FAILED'
 }
 
 export const createCloudGateway = (): AiGatewayPort => ({
   async send(request: AiGatewayRequest): Promise<Result<ChatReply, AppError>> {
     try {
+      ensureCloud()
       const res = await Taro.cloud.callFunction({
         name: 'aiGateway',
         data: { message: request.message, anonymousId: request.anonymousId }
       })
-      const reply = toReply(res.result)
+      const reply = parseChatReply(res.result)
       if (!reply) {
-        // 诊断日志：仅进开发者工具/vConsole 控制台，不进 UI、不含对话内容。
+        // 只记稳定错误码。不打印 result，避免错误体把原文带回控制台。
         const code = (res.result as { error?: unknown } | undefined)?.error
         console.error('[aiGateway] 回应不可归一化:', typeof code === 'string' ? code : 'UNKNOWN_SHAPE')
-        return err(appError(ErrorCode.Gateway, '回应格式异常，请稍后再试。', true))
+        return err(replyError(code))
       }
       return ok(reply)
     } catch (e) {
-      // 诊断日志：真机排障用（未部署/环境不匹配/网络断都会落到这里），仅本地控制台。
-      console.error('[aiGateway] callFunction 失败:', e)
+      // 真机排障：未部署 / 环境不匹配 / 网络断落在这里。只记 errMsg，不记整个异常对象。
+      console.error('[aiGateway] callFunction 失败:', callFailureDetail(e))
       return err(appError(ErrorCode.Network, '网络好像断了一下。你的输入还在，可以再试一次。', true))
     }
   }

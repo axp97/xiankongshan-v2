@@ -64,19 +64,19 @@
 >
 > 原“代码侧生产 MVP 已就绪、剩余仅人工”结论已废止。每项完成仍须 `npm run verify` + 对应行为/故障注入测试 + 更新 memory；不得借返修重开 ADR 非目标。
 
-- [ ] **R1** 会话请求代次、响应归属与清除边界 - **P0 / 我 / 下一编码项**
-  - 范围：`useChat.ts`、`messages.ts`、`ChatView.tsx` 及 Hook/组件测试；建立请求身份、会话代次、逐条重试与旧任务失效。
+- [x] **R1** 会话请求代次、响应归属与清除边界 - **P0 / 我**
+  - 范围：`chatSession.ts`（代次与水位）、`useChat.ts`、`messages.ts`、`ChatView.tsx`；行为测试 `chatSession.test.ts`。建立请求身份、会话代次、逐条重试与旧任务失效。
   - 验收：旧 normal 不得清除新 high；A/B 重试不串话；慢重试不双回；清除后旧网络/followup/timer 不得写回，草稿和会话元状态按约定重置。
-- [ ] **R2** 提供方错误与运行时响应契约 - **P0 / 我**
-  - 范围：`cloudfunctions/aiGateway/index.js`、`src/infra/ai/cloudGateway.ts`、必要的稳定错误码与前后端契约测试。
+- [x] **R2** 提供方错误与运行时响应契约 - **P0 / 我**
+  - 范围：`providerReply.js` 收口 DeepSeek HTTP；`chatReply.ts` 只接受四字段齐全的应用层回复；`cloudGateway.ts` 把错误码映射成可重试错误。
   - 验收：401/403/429/5xx、空 choices、非法 JSON、未知 riskLevel 不得成为正常回复或解除既有 high；response 异常有明确错误语义。
-- [ ] **R3** 输入边界与内容安全三态 - **P0 / 我**
-  - 范围：`aiGateway`、必要的 composer 长度提示、检测/长文本/故障测试与云端文档。
-  - 验收：统一 `pass / blocked / unavailable`；超限不调用模型；无 OPENID、异常、缺 result 不放行成“已检通过”；不存在截断检测后完整外发/展示。
-- [ ] **R4** 反依赖计数、善终与危机豁免修正 - **P0 / 我**
+- [x] **R3** 输入边界与内容安全三态 - **P0 / 我**
+  - 范围：`contentSafety.js` 的 pass / blocked / unavailable；云函数权威长度上限；两端 composer 上限与提示。
+  - 验收：超限不调用模型；无 OPENID、异常、缺 result 不放行成“已检通过”；不存在截断检测后完整外发/展示。
+- [x] **R4** 反依赖计数、善终与危机豁免修正 - **P0 / 我**
   - 范围：`useChat.ts`、`antiDependency.ts/types`、本地存储校验及集成/纯函数测试。
-  - 验收：render 不增加 dayCount；善终只按批准语义出现；transition 豁免一致；连续多日高频有真实数据依据；损坏存储安全降级。
-- [ ] **R5** 高危交互让位 + 空发送提示可达（原 F3 提前项） - **P0 / 我**
+  - 验收：善终只按批准语义出现；transition 豁免一致；连续多日高频有真实数据依据；损坏存储安全降级。render 期重复 `openSession` 已在 R1 改为首次初始化，不再单独立项。
+- [x] **R5** 高危交互让位 + 空发送提示可达（原 F3 提前项） - **P0 / 我**
   - 范围：`ChatView.tsx`、`useChat.ts` 及交互测试；关闭 riskActive/transition 下旧普通 followup 与已延迟 followup 的陪聊绕过，并修复 disabled 发送键导致 nudge 不可达。
   - 验收：高危期间只保留经批准的安全交互；再次 high 优先；普通 chips 不得绕开风险协议；空发送有可见且可访问的提示。危机按钮改名/真实 handoff 等 R6 裁决后再做。
 - [ ] **R6** 风险协议与危机动作专业/产品裁决 - **P0 / 你（不阻塞 R1–R5）**
@@ -85,7 +85,7 @@
 ## Stage D · 发布准备与内测（P1）
 
 - [~] **D1** 云函数部署 + `DEEPSEEK_API_KEY`（`cloudfunctions/README.md`）- **P0 人工**
-  - 进展（2026-08-08）：开发者工具可跑通；**真机 `callFunction` 失败**（错误卡触发，截图已验）。强烈疑似未「上传并部署到云端」或环境不匹配（开发者工具本地调试可绕过部署）。`cloudGateway.ts` 已加诊断日志区分四类原因（未部署/环境不匹配 vs NO_KEY/PROVIDER）。**待确认**：云开发面板两函数部署状态 + `aiGateway` 环境变量 `DEEPSEEK_API_KEY`。
+  - 进展（2026-08-08）：开发者工具可跑通；**真机 `callFunction` 失败**（错误卡触发，截图已验）。强烈疑似未「上传并部署到云端」或环境不匹配。`cloudGateway.ts` 只记 `errMsg` 或稳定错误码。**待确认**：云开发面板两函数部署状态 + `aiGateway` 环境变量 `DEEPSEEK_API_KEY`。R2/R3 改了云函数，确认环境后需要重新上传部署。
 - [ ] **D2** 体验版上传 + 真机冒烟（`harness/checklists/mvp-smoke.md`）- **P0 人工；完整放行前置 R1–R5，风险协议需 R6**
   - 进展（2026-08-08）：**真机 UI 已验全对**（home/chat 双页渲染、错误卡逐字对齐契约）；主路径被云侧失败阻断。开发者工具 ≠ 真机：msgSecCheck（C1）在工具内因无 openid 会 skip（`aiGateway/index.js:28` warn），时段主题真机显色、体验版分发隔离（B5）、安全卡真实触发均须真机验。B7/B8 两轮修的恰是真机才暴露的坑。
 - [ ] **D3** 公开上架合规（企业主体 + 类目 + AIGC 备案）- 非内测必需，公开前另须完成 F1–F4
@@ -97,7 +97,8 @@
 
 - [ ] **F1** 云端韧性、频控配额、预算熔断与最小脱敏告警 - **我 + 你（云配置）**
 - [ ] **F2** 专业标注模型安全评测集；模型/prompt/温度变更回归门禁 - **我 + 你（专业裁决）**
-- [ ] **F3** 生产 UX：滚动、主题恢复、可访问性、减少动态、对比度、小屏 Sheet；UI 数值守 spec 纪律 - **我**
+- [ ] **F3** 生产 UX：主题恢复、可访问性、减少动态、对比度、小屏 Sheet；UI 数值守 spec 纪律 - **我**
+  - 2026-11-22：滚动已单独收口。`scroll-into-view` 每次先清空再指回底部锚点，对齐方式为 `end`。其余 F3 项仍在公开前。
 - [ ] **F4** 第三方数据证据、anonymousId 去留、环境/契约版本、CI、发布与可执行回滚 - **我 + 你（第三方/平台）**
 
 ## Stage E · 上线后增量（P2，非 MVP）
@@ -108,7 +109,7 @@
 
 ## 仓库侧结论
 
-**当前为体验版候选，不是生产就绪。** 下一编码项为 **R1**；R1–R5 未关闭前不得以“剩余仅人工”放行。D1 云部署确认可并行，完整 D2 须同时完成 Gate R 真机/故障注入验收；公开生产另有 F1–F4。证据见 `docs/reviews/2026-11-16-production-readiness.md`。
+**当前为体验版候选，不是生产就绪。** R1–R5 已完成。仓库内没有下一项 P0 编码；下一步是 R6 裁决与 D1 云部署，然后才能做完整 D2。公开生产另有 F1–F4，现在不做。证据见 `docs/reviews/2026-11-16-production-readiness.md`。
 
 ### 工程卫生（非 plan 立项，留痕）
 

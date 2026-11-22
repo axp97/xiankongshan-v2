@@ -62,5 +62,6 @@ export const CLEAR_CONFIRM = {
 export const COMPOSER = {
   placeholder: '写下一句现在最想说的话',
   placeholderClosure: '下次想说了，再来',
-  nudge: '还没写呢——一个词、半句话都可以。'
+  nudge: '还没写呢——一个词、半句话都可以。',
+  tooLong: '这一次先写到这里。还想说的，下一条再说。'
 }
